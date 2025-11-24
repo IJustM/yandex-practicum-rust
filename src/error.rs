@@ -1,18 +1,25 @@
 use std::fmt;
 
+use crate::Col;
+
 #[derive(Debug)]
 pub enum ReadError {
-    Length,
+    Length {
+        index: usize,
+    },
     ParseCol {
-        name: String,
+        index: usize,
+        col: Col,
     },
 }
 
 impl fmt::Display for ReadError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ReadError::Length => write!(f, "Некорректное количество элементов в строке"),
-            ReadError::ParseCol { name } => write!(f, "Ошибка парсинга поля {}", name),
+            ReadError::Length { index } =>
+                write!(f, "Некорректное количество элементов в строке {}", index),
+            ReadError::ParseCol { index, col } =>
+                write!(f, "Ошибка парсинга поля {} в строке {}", col, index),
         }
     }
 }
