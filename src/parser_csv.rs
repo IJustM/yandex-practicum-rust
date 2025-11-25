@@ -1,11 +1,14 @@
 use std::io::{ Read, Write };
 
-use crate::{ Data, Parser, Transaction, TxStatus, TxType, Col, error::{ ReadError, WriteError } };
+use crate::{ Parser, Transaction, TxStatus, TxType, Col, error::{ ReadError, WriteError } };
 
-pub struct ParserCsv;
+#[derive(Debug)]
+pub struct ParserCsv {
+    transactions: Vec<Transaction>,
+}
 
 impl Parser for ParserCsv {
-    fn from_read<R: Read>(r: &mut R) -> Result<Data, ReadError> {
+    fn from_read<R: Read>(r: &mut R) -> Result<Self, ReadError> {
         let mut content = String::new();
         let _ = r.read_to_string(&mut content);
 
@@ -54,12 +57,42 @@ impl Parser for ParserCsv {
             .collect();
 
         match transactions {
-            Ok(transactions) => Ok(Data { transactions }),
+            Ok(transactions) => Ok(Self { transactions }),
             Err(error) => Err(error),
         }
     }
 
     fn write_to<W: Write>(&mut self, writer: &mut W) -> Result<(), WriteError> {
-        todo!()
+        let _ = writeln!(
+            writer,
+            "{}",
+            [
+                Col::TxId,
+                Col::TxType,
+                Col::FromUserId,
+                Col::ToUserId,
+                Col::Amount,
+                Col::Timestamp,
+                Col::Status,
+                Col::Description,
+            ]
+                .map(|c| c.to_string())
+                .join(",")
+        );
+        self.transactions.iter().for_each(|t| {
+            let line = format!(
+                "{},{},{},{},{},{},{},\"{}\"",
+                t.tx_id,
+                t.tx_type,
+                t.from_user_id,
+                t.to_user_id,
+                t.amount,
+                t.timestamp,
+                t.status,
+                t.description
+            );
+            let _ = writeln!(writer, "{}", line);
+        });
+        Ok(())
     }
 }

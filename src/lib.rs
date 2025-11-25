@@ -52,6 +52,17 @@ impl FromStr for TxType {
     }
 }
 
+impl fmt::Display for TxType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            TxType::Deposit => "DEPOSIT",
+            TxType::Transfer => "TRANSFER",
+            TxType::Withdrawal => "WITHDRAWAL",
+        };
+        write!(f, "{}", s)
+    }
+}
+
 #[derive(Debug)]
 pub enum TxStatus {
     Success,
@@ -71,27 +82,34 @@ impl FromStr for TxStatus {
     }
 }
 
-#[derive(Debug)]
-pub struct Transaction {
-    pub tx_id: u64,
-    pub tx_type: TxType,
-    pub from_user_id: u64,
-    pub to_user_id: u64,
-    pub amount: u64,
-    pub timestamp: i64,
-    pub status: TxStatus,
-    pub description: String,
+impl fmt::Display for TxStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            TxStatus::Success => "SUCCESS",
+            TxStatus::Failure => "FAILURE",
+            TxStatus::Pending => "PENDING",
+        };
+        write!(f, "{}", s)
+    }
 }
 
 #[derive(Debug)]
-pub struct Data {
-    pub transactions: Vec<Transaction>,
+pub struct Transaction {
+    tx_id: u64,
+    tx_type: TxType,
+    from_user_id: u64,
+    to_user_id: u64,
+    amount: u64,
+    timestamp: i64,
+    status: TxStatus,
+    description: String,
 }
 
 pub trait Parser {
     // чтение из файла
-    fn from_read<R: Read>(r: &mut R) -> Result<Data, ReadError>;
+    fn from_read<R: Read>(r: &mut R) -> Result<Self, ReadError> where Self: Sized;
 
     // запись в файл
     fn write_to<W: Write>(&mut self, writer: &mut W) -> Result<(), WriteError>;
 }
+
