@@ -1,12 +1,12 @@
-pub mod error;
-pub mod parser_csv;
+pub mod parsers;
+mod errors;
 
 use std::{ fmt, io::{ Read, Write }, str::FromStr };
 
-use crate::error::{ ReadError, WriteError };
+use crate::errors::WriteError;
 
 #[derive(Debug)]
-pub enum Col {
+pub enum Field {
     TxId,
     TxType,
     FromUserId,
@@ -17,17 +17,32 @@ pub enum Col {
     Status,
 }
 
-impl fmt::Display for Col {
+impl Field {
+    fn get_all() -> [Field; 8] {
+        [
+            Self::TxId,
+            Self::TxType,
+            Self::FromUserId,
+            Self::ToUserId,
+            Self::Amount,
+            Self::Timestamp,
+            Self::Description,
+            Self::Status,
+        ]
+    }
+}
+
+impl fmt::Display for Field {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
-            Col::TxId => "TX_ID",
-            Col::TxType => "TX_TYPE",
-            Col::FromUserId => "FROM_USER_ID",
-            Col::ToUserId => "TO_USER_ID",
-            Col::Amount => "AMOUNT",
-            Col::Timestamp => "TIMESTAMP",
-            Col::Description => "DESCRIPTION",
-            Col::Status => "STATUS",
+            Self::TxId => "TX_ID",
+            Self::TxType => "TX_TYPE",
+            Self::FromUserId => "FROM_USER_ID",
+            Self::ToUserId => "TO_USER_ID",
+            Self::Amount => "AMOUNT",
+            Self::Timestamp => "TIMESTAMP",
+            Self::Description => "DESCRIPTION",
+            Self::Status => "STATUS",
         };
         write!(f, "{}", s)
     }
@@ -55,9 +70,9 @@ impl FromStr for TxType {
 impl fmt::Display for TxType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
-            TxType::Deposit => "DEPOSIT",
-            TxType::Transfer => "TRANSFER",
-            TxType::Withdrawal => "WITHDRAWAL",
+            Self::Deposit => "DEPOSIT",
+            Self::Transfer => "TRANSFER",
+            Self::Withdrawal => "WITHDRAWAL",
         };
         write!(f, "{}", s)
     }
@@ -85,9 +100,9 @@ impl FromStr for TxStatus {
 impl fmt::Display for TxStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
-            TxStatus::Success => "SUCCESS",
-            TxStatus::Failure => "FAILURE",
-            TxStatus::Pending => "PENDING",
+            Self::Success => "SUCCESS",
+            Self::Failure => "FAILURE",
+            Self::Pending => "PENDING",
         };
         write!(f, "{}", s)
     }
@@ -106,8 +121,10 @@ pub struct Transaction {
 }
 
 pub trait Parser {
+    type Error;
+
     // чтение из файла
-    fn from_read<R: Read>(r: &mut R) -> Result<Vec<Transaction>, ReadError>;
+    fn from_read<R: Read>(r: &mut R) -> Result<Vec<Transaction>, Self::Error>;
 
     // запись в файл
     fn write_to<W: Write>(

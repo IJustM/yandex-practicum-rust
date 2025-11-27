@@ -1,48 +1,58 @@
 use std::io::{ Read, Write };
 
-use crate::{ Parser, Transaction, TxStatus, TxType, Col, error::{ ReadError, WriteError } };
+use crate::{
+    Field,
+    Parser,
+    Transaction,
+    TxStatus,
+    TxType,
+    errors::WriteError,
+    parsers::csv::error::CsvError,
+};
 
 pub struct CsvParser;
 
 impl Parser for CsvParser {
-    fn from_read<R: Read>(r: &mut R) -> Result<Vec<Transaction>, ReadError> {
+    type Error = CsvError;
+
+    fn from_read<R: Read>(r: &mut R) -> Result<Vec<Transaction>, CsvError> {
         let mut content = String::new();
-        r.read_to_string(&mut content).map_err(|_| ReadError::Read)?;
+        r.read_to_string(&mut content).map_err(|_| CsvError::Read)?;
 
         let mut lines = content.lines();
 
         match lines.next() {
             Some(first) if first == get_title_row() => {}
-            _ => Err(ReadError::Title)?,
+            _ => Err(CsvError::Title)?,
         }
 
-        let transactions: Result<Vec<Transaction>, ReadError> = lines
+        let transactions: Result<Vec<Transaction>, CsvError> = lines
             .enumerate()
             .map(|(index, line)| {
                 let row: Vec<&str> = line.split(",").collect();
 
                 if row.len() != 8 {
-                    return Err(ReadError::Length { index });
+                    return Err(CsvError::Length { index });
                 }
 
-                let parse_col_u64 = |i: usize, col: Col| {
-                    row[i].parse::<u64>().map_err(|_| ReadError::ParseCol { index, col })
+                let parse_col_u64 = |i: usize, field: Field| {
+                    row[i].parse::<u64>().map_err(|_| CsvError::ParseCol { index, field })
                 };
-                let parse_col_i64 = |i: usize, col: Col| {
-                    row[i].parse::<i64>().map_err(|_| ReadError::ParseCol { index, col })
+                let parse_col_i64 = |i: usize, field: Field| {
+                    row[i].parse::<i64>().map_err(|_| CsvError::ParseCol { index, field })
                 };
 
-                let tx_id = parse_col_u64(0, Col::TxId)?;
+                let tx_id = parse_col_u64(0, Field::TxId)?;
                 let tx_type = row[1]
                     .parse::<TxType>()
-                    .map_err(|_| ReadError::ParseCol { index, col: Col::TxType })?;
-                let from_user_id: u64 = parse_col_u64(2, Col::FromUserId)?;
-                let to_user_id: u64 = parse_col_u64(3, Col::ToUserId)?;
-                let amount: u64 = parse_col_u64(4, Col::Amount)?;
-                let timestamp: i64 = parse_col_i64(5, Col::Timestamp)?;
+                    .map_err(|_| CsvError::ParseCol { index, field: Field::TxType })?;
+                let from_user_id: u64 = parse_col_u64(2, Field::FromUserId)?;
+                let to_user_id: u64 = parse_col_u64(3, Field::ToUserId)?;
+                let amount: u64 = parse_col_u64(4, Field::Amount)?;
+                let timestamp: i64 = parse_col_i64(5, Field::Timestamp)?;
                 let status = row[6]
                     .parse::<TxStatus>()
-                    .map_err(|_| ReadError::ParseCol { index, col: Col::Status })?;
+                    .map_err(|_| CsvError::ParseCol { index, field: Field::Status })?;
                 let description = row[7].trim_matches('"').to_string();
 
                 Ok(Transaction {
@@ -88,16 +98,7 @@ impl Parser for CsvParser {
 fn get_title_row() -> String {
     let row = format!(
         "{}",
-        [
-            Col::TxId,
-            Col::TxType,
-            Col::FromUserId,
-            Col::ToUserId,
-            Col::Amount,
-            Col::Timestamp,
-            Col::Status,
-            Col::Description,
-        ]
+        Field::get_all()
             .map(|c| c.to_string())
             .join(",")
     );
