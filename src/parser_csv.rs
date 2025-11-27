@@ -4,17 +4,41 @@ use crate::{ Parser, Transaction, TxStatus, TxType, Col, error::{ ReadError, Wri
 
 #[derive(Debug)]
 pub struct ParserCsv {
-    transactions: Vec<Transaction>,
+    pub transactions: Vec<Transaction>,
+}
+
+fn get_title_row() -> String {
+    let row = format!(
+        "{}",
+        [
+            Col::TxId,
+            Col::TxType,
+            Col::FromUserId,
+            Col::ToUserId,
+            Col::Amount,
+            Col::Timestamp,
+            Col::Status,
+            Col::Description,
+        ]
+            .map(|c| c.to_string())
+            .join(",")
+    );
+    row
 }
 
 impl Parser for ParserCsv {
     fn from_read<R: Read>(r: &mut R) -> Result<Self, ReadError> {
         let mut content = String::new();
-        let _ = r.read_to_string(&mut content);
+        r.read_to_string(&mut content).map_err(|_| ReadError::Read)?;
 
-        let transactions: Result<Vec<Transaction>, ReadError> = content
-            .lines()
-            .skip(1)
+        let mut lines = content.lines();
+
+        match lines.next() {
+            Some(first) if first == get_title_row() => {}
+            _ => Err(ReadError::Title)?,
+        }
+
+        let transactions: Result<Vec<Transaction>, ReadError> = lines
             .enumerate()
             .map(|(index, line)| {
                 let row: Vec<&str> = line.split(",").collect();
@@ -63,23 +87,8 @@ impl Parser for ParserCsv {
     }
 
     fn write_to<W: Write>(&mut self, writer: &mut W) -> Result<(), WriteError> {
-        let _ = writeln!(
-            writer,
-            "{}",
-            [
-                Col::TxId,
-                Col::TxType,
-                Col::FromUserId,
-                Col::ToUserId,
-                Col::Amount,
-                Col::Timestamp,
-                Col::Status,
-                Col::Description,
-            ]
-                .map(|c| c.to_string())
-                .join(",")
-        );
-        self.transactions.iter().for_each(|t| {
+        writeln!(writer, "{}", get_title_row()).map_err(|_| WriteError::Write)?;
+        for t in &self.transactions {
             let line = format!(
                 "{},{},{},{},{},{},{},\"{}\"",
                 t.tx_id,
@@ -91,8 +100,9 @@ impl Parser for ParserCsv {
                 t.status,
                 t.description
             );
-            let _ = writeln!(writer, "{}", line);
-        });
+            writeln!(writer, "{}", line).map_err(|_| WriteError::Write)?;
+        }
+        writer.flush().map_err(|_| WriteError::Write)?;
         Ok(())
     }
 }

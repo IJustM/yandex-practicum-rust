@@ -112,4 +112,3 @@ pub trait Parser {
     // запись в файл
     fn write_to<W: Write>(&mut self, writer: &mut W) -> Result<(), WriteError>;
 }
-

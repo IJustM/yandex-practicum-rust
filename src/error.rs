@@ -1,9 +1,11 @@
-use std::fmt;
+use std::{ fmt };
 
 use crate::Col;
 
 #[derive(Debug)]
 pub enum ReadError {
+    Read,
+    Title,
     Length {
         index: usize,
     },
@@ -16,6 +18,8 @@ pub enum ReadError {
 impl fmt::Display for ReadError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            ReadError::Read => write!(f, "Ошибка чтения"),
+            ReadError::Title => write!(f, "Некорректный заголовок"),
             ReadError::Length { index } =>
                 write!(f, "Некорректное количество элементов в строке {}", index),
             ReadError::ParseCol { index, col } =>
@@ -25,4 +29,14 @@ impl fmt::Display for ReadError {
 }
 
 #[derive(Debug)]
-pub enum WriteError {}
+pub enum WriteError {
+    Write,
+}
+
+impl fmt::Display for WriteError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            WriteError::Write => write!(f, "Ошибка записи"),
+        }
+    }
+}
