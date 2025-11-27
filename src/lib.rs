@@ -5,7 +5,7 @@ use std::{ fmt, io::{ Read, Write }, str::FromStr };
 
 use crate::errors::WriteError;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Field {
     TxId,
     TxType,
@@ -13,8 +13,8 @@ pub enum Field {
     ToUserId,
     Amount,
     Timestamp,
-    Description,
     Status,
+    Description,
 }
 
 impl Field {
@@ -26,8 +26,8 @@ impl Field {
             Self::ToUserId,
             Self::Amount,
             Self::Timestamp,
-            Self::Description,
             Self::Status,
+            Self::Description,
         ]
     }
 }
@@ -41,15 +41,16 @@ impl fmt::Display for Field {
             Self::ToUserId => "TO_USER_ID",
             Self::Amount => "AMOUNT",
             Self::Timestamp => "TIMESTAMP",
-            Self::Description => "DESCRIPTION",
             Self::Status => "STATUS",
+            Self::Description => "DESCRIPTION",
         };
         write!(f, "{}", s)
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub enum TxType {
+    #[default]
     Deposit,
     Transfer,
     Withdrawal,
@@ -78,8 +79,9 @@ impl fmt::Display for TxType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub enum TxStatus {
+    #[default]
     Success,
     Failure,
     Pending,
@@ -108,7 +110,7 @@ impl fmt::Display for TxStatus {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Transaction {
     tx_id: u64,
     tx_type: TxType,
@@ -118,6 +120,21 @@ pub struct Transaction {
     timestamp: i64,
     status: TxStatus,
     description: String,
+}
+
+impl Transaction {
+    fn get_value(&self, field: &Field) -> String {
+        match field {
+            Field::TxId => self.tx_id.to_string(),
+            Field::TxType => self.tx_type.to_string(),
+            Field::FromUserId => self.from_user_id.to_string(),
+            Field::ToUserId => self.to_user_id.to_string(),
+            Field::Amount => self.amount.to_string(),
+            Field::Timestamp => self.timestamp.to_string(),
+            Field::Status => self.status.to_string(),
+            Field::Description => self.description.to_string(),
+        }
+    }
 }
 
 pub trait Parser {

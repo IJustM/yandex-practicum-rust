@@ -36,34 +36,25 @@ impl Parser for CsvParser {
                 }
 
                 let parse_col_u64 = |i: usize, field: Field| {
-                    row[i].parse::<u64>().map_err(|_| CsvError::ParseCol { index, field })
+                    row[i].parse::<u64>().map_err(|_| CsvError::ParseField { index, field })
                 };
                 let parse_col_i64 = |i: usize, field: Field| {
-                    row[i].parse::<i64>().map_err(|_| CsvError::ParseCol { index, field })
+                    row[i].parse::<i64>().map_err(|_| CsvError::ParseField { index, field })
                 };
 
-                let tx_id = parse_col_u64(0, Field::TxId)?;
-                let tx_type = row[1]
-                    .parse::<TxType>()
-                    .map_err(|_| CsvError::ParseCol { index, field: Field::TxType })?;
-                let from_user_id: u64 = parse_col_u64(2, Field::FromUserId)?;
-                let to_user_id: u64 = parse_col_u64(3, Field::ToUserId)?;
-                let amount: u64 = parse_col_u64(4, Field::Amount)?;
-                let timestamp: i64 = parse_col_i64(5, Field::Timestamp)?;
-                let status = row[6]
-                    .parse::<TxStatus>()
-                    .map_err(|_| CsvError::ParseCol { index, field: Field::Status })?;
-                let description = row[7].trim_matches('"').to_string();
-
                 Ok(Transaction {
-                    tx_id,
-                    tx_type,
-                    from_user_id,
-                    to_user_id,
-                    amount,
-                    timestamp,
-                    status,
-                    description,
+                    tx_id: parse_col_u64(0, Field::TxId)?,
+                    tx_type: row[1]
+                        .parse::<TxType>()
+                        .map_err(|_| CsvError::ParseField { index, field: Field::TxType })?,
+                    from_user_id: parse_col_u64(2, Field::FromUserId)?,
+                    to_user_id: parse_col_u64(3, Field::ToUserId)?,
+                    amount: parse_col_u64(4, Field::Amount)?,
+                    timestamp: parse_col_i64(5, Field::Timestamp)?,
+                    status: row[6]
+                        .parse::<TxStatus>()
+                        .map_err(|_| CsvError::ParseField { index, field: Field::Status })?,
+                    description: row[7].trim_matches('"').to_string(),
                 })
             })
             .collect();
