@@ -5,7 +5,7 @@ use std::{ fmt, io::{ Read, Write }, str::FromStr };
 
 use crate::errors::WriteError;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Field {
     TxId,
     TxType,
@@ -48,9 +48,8 @@ impl fmt::Display for Field {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub enum TxType {
-    #[default]
     Deposit,
     Transfer,
     Withdrawal,
@@ -79,9 +78,8 @@ impl fmt::Display for TxType {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub enum TxStatus {
-    #[default]
     Success,
     Failure,
     Pending,
@@ -110,7 +108,7 @@ impl fmt::Display for TxStatus {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Transaction {
     tx_id: u64,
     tx_type: TxType,

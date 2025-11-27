@@ -21,6 +21,8 @@ impl Parser for CsvParser {
 
         let mut lines = content.lines();
 
+        
+
         match lines.next() {
             Some(first) if first == get_title_row() => {}
             _ => Err(CsvError::Title)?,
