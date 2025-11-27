@@ -107,8 +107,11 @@ pub struct Transaction {
 
 pub trait Parser {
     // чтение из файла
-    fn from_read<R: Read>(r: &mut R) -> Result<Self, ReadError> where Self: Sized;
+    fn from_read<R: Read>(r: &mut R) -> Result<Vec<Transaction>, ReadError>;
 
     // запись в файл
-    fn write_to<W: Write>(&mut self, writer: &mut W) -> Result<(), WriteError>;
+    fn write_to<W: Write>(
+        transactions: &Vec<Transaction>,
+        writer: &mut W
+    ) -> Result<(), WriteError>;
 }

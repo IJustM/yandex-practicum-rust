@@ -2,32 +2,10 @@ use std::io::{ Read, Write };
 
 use crate::{ Parser, Transaction, TxStatus, TxType, Col, error::{ ReadError, WriteError } };
 
-#[derive(Debug)]
-pub struct ParserCsv {
-    pub transactions: Vec<Transaction>,
-}
+pub struct CsvParser;
 
-fn get_title_row() -> String {
-    let row = format!(
-        "{}",
-        [
-            Col::TxId,
-            Col::TxType,
-            Col::FromUserId,
-            Col::ToUserId,
-            Col::Amount,
-            Col::Timestamp,
-            Col::Status,
-            Col::Description,
-        ]
-            .map(|c| c.to_string())
-            .join(",")
-    );
-    row
-}
-
-impl Parser for ParserCsv {
-    fn from_read<R: Read>(r: &mut R) -> Result<Self, ReadError> {
+impl Parser for CsvParser {
+    fn from_read<R: Read>(r: &mut R) -> Result<Vec<Transaction>, ReadError> {
         let mut content = String::new();
         r.read_to_string(&mut content).map_err(|_| ReadError::Read)?;
 
@@ -80,15 +58,15 @@ impl Parser for ParserCsv {
             })
             .collect();
 
-        match transactions {
-            Ok(transactions) => Ok(Self { transactions }),
-            Err(error) => Err(error),
-        }
+        transactions
     }
 
-    fn write_to<W: Write>(&mut self, writer: &mut W) -> Result<(), WriteError> {
+    fn write_to<W: Write>(
+        transactions: &Vec<Transaction>,
+        writer: &mut W
+    ) -> Result<(), WriteError> {
         writeln!(writer, "{}", get_title_row()).map_err(|_| WriteError::Write)?;
-        for t in &self.transactions {
+        for t in transactions {
             let line = format!(
                 "{},{},{},{},{},{},{},\"{}\"",
                 t.tx_id,
@@ -105,4 +83,23 @@ impl Parser for ParserCsv {
         writer.flush().map_err(|_| WriteError::Write)?;
         Ok(())
     }
+}
+
+fn get_title_row() -> String {
+    let row = format!(
+        "{}",
+        [
+            Col::TxId,
+            Col::TxType,
+            Col::FromUserId,
+            Col::ToUserId,
+            Col::Amount,
+            Col::Timestamp,
+            Col::Status,
+            Col::Description,
+        ]
+            .map(|c| c.to_string())
+            .join(",")
+    );
+    row
 }

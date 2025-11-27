@@ -1,10 +1,10 @@
 use std::{ fs, io, path::Path };
 
-use yandex_practicum_rust::{ Parser, parser_csv::ParserCsv };
+use yandex_practicum_rust::{ Parser, parser_csv::CsvParser };
 
 fn main() {
     let mut reader = fs::File::open("files/records_example.csv").unwrap();
-    let mut parser = ParserCsv::from_read(&mut reader).unwrap();
+    let transactions = CsvParser::from_read(&mut reader).unwrap();
 
     let output = "files/records_example2.csv";
     if Path::new(output).exists() {
@@ -12,7 +12,7 @@ fn main() {
     }
     let file = fs::File::create(output).unwrap();
     let mut writer = io::BufWriter::new(file);
-    let _ = parser.write_to(&mut writer);
+    let _ = CsvParser::write_to(&transactions, &mut writer);
 
     // let mut reader = fs::File::open("files/records_example.txt").unwrap();
     // let mut parser = ParserCsv::from_read(&mut reader).unwrap();
