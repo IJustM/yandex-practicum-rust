@@ -44,12 +44,13 @@ impl fmt::Display for Field {
             Self::Status => "STATUS",
             Self::Description => "DESCRIPTION",
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default, PartialEq)]
 pub enum TxType {
+    #[default]
     Deposit,
     Transfer,
     Withdrawal,
@@ -74,12 +75,13 @@ impl fmt::Display for TxType {
             Self::Transfer => "TRANSFER",
             Self::Withdrawal => "WITHDRAWAL",
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default, PartialEq)]
 pub enum TxStatus {
+    #[default]
     Success,
     Failure,
     Pending,
@@ -104,11 +106,11 @@ impl fmt::Display for TxStatus {
             Self::Failure => "FAILURE",
             Self::Pending => "PENDING",
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Transaction {
     tx_id: u64,
     tx_type: TxType,
