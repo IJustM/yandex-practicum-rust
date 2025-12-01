@@ -9,7 +9,7 @@ pub enum CsvError {
     Length {
         index: usize,
     },
-    ParseField {
+    InvalidField {
         index: usize,
         field: Field,
     },
@@ -22,7 +22,7 @@ impl fmt::Display for CsvError {
             Self::Header => write!(f, "Некорректный заголовок"),
             Self::Length { index } =>
                 write!(f, "Некорректное количество элементов в строке {index}"),
-            Self::ParseField { index, field } =>
+            Self::InvalidField { index, field } =>
                 write!(f, "Ошибка парсинга поля {field} в строке {index}"),
         }
     }

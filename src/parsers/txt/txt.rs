@@ -3,11 +3,11 @@ use std::{ io::{ Read, Write } };
 use crate::{
     Field,
     Parser,
+    Status,
     Transaction,
-    TxStatus,
     TxType,
     errors::WriteError,
-    parsers::txt::error::TxtError,
+    parsers::{ txt::error::TxtError, utils::description_trim },
 };
 
 pub struct TxtParser;
@@ -70,10 +70,10 @@ impl Parser for TxtParser {
             parsed_field.1 = true;
 
             let parse_col_u64 = |field: Field| {
-                value.parse::<u64>().map_err(|_| TxtError::ParseField { index, field })
+                value.parse::<u64>().map_err(|_| TxtError::InvalidField { index, field })
             };
             let parse_col_i64 = |field: Field| {
-                value.parse::<i64>().map_err(|_| TxtError::ParseField { index, field })
+                value.parse::<i64>().map_err(|_| TxtError::InvalidField { index, field })
             };
 
             match field {
@@ -83,7 +83,7 @@ impl Parser for TxtParser {
                 Field::TxType => {
                     transaction.tx_type = value
                         .parse::<TxType>()
-                        .map_err(|_| TxtError::ParseField { index, field })?;
+                        .map_err(|_| TxtError::InvalidField { index, field })?;
                 }
                 Field::FromUserId => {
                     transaction.from_user_id = parse_col_u64(field)?;
@@ -99,15 +99,13 @@ impl Parser for TxtParser {
                 }
                 Field::Status => {
                     transaction.status = value
-                        .parse::<TxStatus>()
-                        .map_err(|_| TxtError::ParseField { index, field })?;
+                        .parse::<Status>()
+                        .map_err(|_| TxtError::InvalidField { index, field })?;
                 }
                 Field::Description => {
-                    transaction.description = (if value.starts_with('"') && value.ends_with('"') {
-                        Ok(value.trim_matches('"').to_string())
-                    } else {
-                        Err(TxtError::ParseField { index, field })
-                    })?;
+                    transaction.description = description_trim(value).map_err(
+                        |_| TxtError::InvalidField { index, field }
+                    )?;
                 }
             }
         }
@@ -116,8 +114,8 @@ impl Parser for TxtParser {
     }
 
     fn write_to<W: Write>(
-        transactions: &Vec<Transaction>,
-        writer: &mut W
+        writer: &mut W,
+        transactions: &Vec<Transaction>
     ) -> Result<(), WriteError> {
         for t in transactions {
             let transtaction_record = Field::get_all()
@@ -131,7 +129,7 @@ impl Parser for TxtParser {
                     format!("{}: {}", field, value)
                 })
                 .join("\n");
-            write!(writer, "{transtaction_record}\n").map_err(|_| WriteError::Write)?;
+            write!(writer, "{transtaction_record}\n\n").map_err(|_| WriteError::Write)?;
         }
         writer.flush().map_err(|_| WriteError::Write)?;
         Ok(())
@@ -167,7 +165,7 @@ mod tests {
                 to_user_id: 1,
                 amount: 100,
                 timestamp: 1633036860000,
-                status: TxStatus::Success,
+                status: Status::Success,
                 description: "Test 1".to_string(),
             },
         ]);

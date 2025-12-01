@@ -20,7 +20,7 @@ pub enum TxtError {
         index: usize,
         field: Field,
     },
-    ParseField {
+    InvalidField {
         index: usize,
         field: Field,
     },
@@ -37,7 +37,7 @@ impl fmt::Display for TxtError {
                 write!(f, "Повторное чтение поле {field} в строке {index}"),
             Self::MissingField { index, field } =>
                 write!(f, "Отсутствует поле {field} в записи на строке {index}"),
-            Self::ParseField { index, field } =>
+            Self::InvalidField { index, field } =>
                 write!(f, "Ошибка парсинга поля {field} в строке {index}"),
         }
     }

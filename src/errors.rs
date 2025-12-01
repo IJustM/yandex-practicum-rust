@@ -12,3 +12,15 @@ impl fmt::Display for WriteError {
         }
     }
 }
+
+pub enum ParserTypeError {
+    UnknownExt,
+}
+
+impl fmt::Display for ParserTypeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::UnknownExt => write!(f, "Неизвестное расширение файла"),
+        }
+    }
+}

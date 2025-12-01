@@ -3,7 +3,36 @@ mod errors;
 
 use std::{ fmt, io::{ Read, Write }, str::FromStr };
 
-use crate::errors::WriteError;
+use crate::errors::{ ParserTypeError, WriteError };
+
+pub enum ParserType {
+    Csv,
+    Txt,
+    Bin,
+}
+
+impl FromStr for ParserType {
+    type Err = ParserTypeError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.split(".").last().ok_or(ParserTypeError::UnknownExt)? {
+            "csv" => Ok(ParserType::Csv),
+            "txt" => Ok(ParserType::Txt),
+            "bin" => Ok(ParserType::Bin),
+            _ => Err(ParserTypeError::UnknownExt),
+        }
+    }
+}
+
+impl fmt::Display for ParserType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            Self::Csv => "csv",
+            Self::Txt => "txt",
+            Self::Bin => "bin",
+        };
+        write!(f, "{s}")
+    }
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Field {
@@ -80,26 +109,26 @@ impl fmt::Display for TxType {
 }
 
 #[derive(Debug, Default, PartialEq)]
-pub enum TxStatus {
+pub enum Status {
     #[default]
     Success,
     Failure,
     Pending,
 }
 
-impl FromStr for TxStatus {
+impl FromStr for Status {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "SUCCESS" => Ok(TxStatus::Success),
-            "FAILURE" => Ok(TxStatus::Failure),
-            "PENDING" => Ok(TxStatus::Pending),
+            "SUCCESS" => Ok(Status::Success),
+            "FAILURE" => Ok(Status::Failure),
+            "PENDING" => Ok(Status::Pending),
             _ => Err(()),
         }
     }
 }
 
-impl fmt::Display for TxStatus {
+impl fmt::Display for Status {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
             Self::Success => "SUCCESS",
@@ -118,7 +147,7 @@ pub struct Transaction {
     to_user_id: u64,
     amount: u64,
     timestamp: i64,
-    status: TxStatus,
+    status: Status,
     description: String,
 }
 
@@ -145,7 +174,7 @@ pub trait Parser {
 
     // запись в файл
     fn write_to<W: Write>(
-        transactions: &Vec<Transaction>,
-        writer: &mut W
+        writer: &mut W,
+        transactions: &Vec<Transaction>
     ) -> Result<(), WriteError>;
 }

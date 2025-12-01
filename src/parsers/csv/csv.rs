@@ -3,11 +3,11 @@ use std::io::{ Read, Write };
 use crate::{
     Field,
     Parser,
+    Status,
     Transaction,
-    TxStatus,
     TxType,
     errors::WriteError,
-    parsers::csv::error::CsvError,
+    parsers::{ csv::error::CsvError, utils::description_trim },
 };
 
 pub struct CsvParser;
@@ -41,28 +41,27 @@ impl Parser for CsvParser {
             }
 
             let parse_col_u64 = |i: usize, field: Field| {
-                values[i].parse::<u64>().map_err(|_| CsvError::ParseField { index, field })
+                values[i].parse::<u64>().map_err(|_| CsvError::InvalidField { index, field })
             };
             let parse_col_i64 = |i: usize, field: Field| {
-                values[i].parse::<i64>().map_err(|_| CsvError::ParseField { index, field })
+                values[i].parse::<i64>().map_err(|_| CsvError::InvalidField { index, field })
             };
 
             transactions.push(Transaction {
                 tx_id: parse_col_u64(0, Field::TxId)?,
                 tx_type: values[1]
                     .parse::<TxType>()
-                    .map_err(|_| CsvError::ParseField { index, field: Field::TxType })?,
+                    .map_err(|_| CsvError::InvalidField { index, field: Field::TxType })?,
                 from_user_id: parse_col_u64(2, Field::FromUserId)?,
                 to_user_id: parse_col_u64(3, Field::ToUserId)?,
                 amount: parse_col_u64(4, Field::Amount)?,
                 timestamp: parse_col_i64(5, Field::Timestamp)?,
                 status: values[6]
-                    .parse::<TxStatus>()
-                    .map_err(|_| CsvError::ParseField { index, field: Field::Status })?,
-                description: (if values[7].starts_with('"') && values[7].ends_with('"') {
-                    Ok(values[7].trim_matches('"').to_string())
-                } else {
-                    Err(CsvError::ParseField { index, field: Field::Description })
+                    .parse::<Status>()
+                    .map_err(|_| CsvError::InvalidField { index, field: Field::Status })?,
+                description: description_trim(values[7]).map_err(|_| CsvError::InvalidField {
+                    index,
+                    field: Field::Description,
                 })?,
             });
         }
@@ -71,8 +70,8 @@ impl Parser for CsvParser {
     }
 
     fn write_to<W: Write>(
-        transactions: &Vec<Transaction>,
-        writer: &mut W
+        writer: &mut W,
+        transactions: &Vec<Transaction>
     ) -> Result<(), WriteError> {
         writeln!(writer, "{}", get_header_row()).map_err(|_| WriteError::Write)?;
         for t in transactions {
@@ -119,7 +118,7 @@ mod tests {
                 to_user_id: 1,
                 amount: 100,
                 timestamp: 1633036860000,
-                status: TxStatus::Success,
+                status: Status::Success,
                 description: "Test 1".to_string(),
             },
         ]);
