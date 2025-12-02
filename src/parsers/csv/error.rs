@@ -27,3 +27,5 @@ impl fmt::Display for CsvError {
         }
     }
 }
+
+impl std::error::Error for CsvError {}

@@ -1,4 +1,4 @@
-use std::{ fmt };
+use std::fmt;
 
 use crate::Field;
 
@@ -35,3 +35,5 @@ impl fmt::Display for BinError {
         }
     }
 }
+
+impl std::error::Error for BinError {}

@@ -13,6 +13,9 @@ impl fmt::Display for WriteError {
     }
 }
 
+impl std::error::Error for WriteError {}
+
+#[derive(Debug)]
 pub enum ParserTypeError {
     UnknownExt,
 }
@@ -24,3 +27,5 @@ impl fmt::Display for ParserTypeError {
         }
     }
 }
+
+impl std::error::Error for ParserTypeError {}

@@ -42,3 +42,5 @@ impl fmt::Display for TxtError {
         }
     }
 }
+
+impl std::error::Error for TxtError {}
