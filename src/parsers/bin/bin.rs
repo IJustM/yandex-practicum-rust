@@ -23,7 +23,7 @@ impl Parser for BinParser {
         r.read_to_end(&mut data).map_err(|_| BinError::Read)?;
         let length = data.len();
 
-        let mut transactions: Vec<Transaction> = vec![];
+        let mut transactions: Vec<Transaction> = Vec::new();
 
         let mut offset = 0;
         let mut record_index = 0;

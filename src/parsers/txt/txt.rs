@@ -19,7 +19,7 @@ impl Parser for TxtParser {
         let mut content = String::new();
         r.read_to_string(&mut content).map_err(|_| TxtError::Read)?;
 
-        let mut transactions: Vec<Transaction> = vec![];
+        let mut transactions: Vec<Transaction> = Vec::new();
         let mut transaction = Transaction::default();
 
         let mut parsed_fields = Field::get_all().map(|f| (f, false));
@@ -137,13 +137,19 @@ impl Parser for TxtParser {
 }
 
 #[cfg(test)]
-mod tests {
+mod tests_from_read {
     use std::io::Cursor;
 
     use super::*;
 
+    fn get_cursor(lines: Vec<&str>) -> Cursor<String> {
+        let data = lines.join("\n");
+        let cursor = Cursor::new(data);
+        cursor
+    }
+
     #[test]
-    fn test_success_parse() {
+    fn test_success_from_read() {
         let mut cursor = get_cursor(
             vec![
                 "TX_ID: 0",
@@ -169,12 +175,6 @@ mod tests {
                 description: "Test 1".to_string(),
             },
         ]);
-    }
-
-    fn get_cursor(lines: Vec<&str>) -> Cursor<String> {
-        let data = lines.join("\n");
-        let cursor = Cursor::new(data);
-        cursor
     }
 
     #[test]
@@ -217,7 +217,7 @@ mod tests {
     }
 
     #[test]
-    fn test_error_parse_field() {
+    fn test_error_invalid_field() {
         let mut cursor = get_cursor(
             vec![
                 "TX_ID: !",
@@ -337,5 +337,68 @@ mod tests {
         );
         let result = TxtParser::from_read(&mut cursor).unwrap_err();
         assert_eq!(result.to_string(), "Ошибка парсинга поля DESCRIPTION в строке 7");
+    }
+}
+
+#[cfg(test)]
+mod tests_write_to {
+    use std::io::Cursor;
+
+    use super::*;
+
+    #[test]
+    fn test_success_write_to() {
+        let transactions: Vec<Transaction> = vec![
+            Transaction {
+                tx_id: 1,
+                tx_type: TxType::Deposit,
+                from_user_id: 0,
+                to_user_id: 1,
+                amount: 1000,
+                timestamp: 1633036860000,
+                status: Status::Success,
+                description: "record 1".to_string(),
+            },
+            Transaction {
+                tx_id: 2,
+                tx_type: TxType::Transfer,
+                from_user_id: 1,
+                to_user_id: 2,
+                amount: 1111,
+                timestamp: 1633036860000,
+                status: Status::Failure,
+                description: "record 2".to_string(),
+            }
+        ];
+        let mut cursor = Cursor::new(Vec::new());
+        TxtParser::write_to(&mut cursor, &transactions).unwrap();
+        let mut result = String::new();
+        cursor.set_position(0);
+        let _ = cursor.read_to_string(&mut result);
+        assert_eq!(
+            result,
+            [
+                "TX_ID: 1",
+                "TX_TYPE: DEPOSIT",
+                "FROM_USER_ID: 0",
+                "TO_USER_ID: 1",
+                "AMOUNT: 1000",
+                "TIMESTAMP: 1633036860000",
+                "STATUS: SUCCESS",
+                "DESCRIPTION: \"record 1\"",
+                "",
+                "TX_ID: 2",
+                "TX_TYPE: TRANSFER",
+                "FROM_USER_ID: 1",
+                "TO_USER_ID: 2",
+                "AMOUNT: 1111",
+                "TIMESTAMP: 1633036860000",
+                "STATUS: FAILURE",
+                "DESCRIPTION: \"record 2\"",
+                "",
+            ]
+                .map(|l| format!("{l}\n"))
+                .join("")
+        );
     }
 }

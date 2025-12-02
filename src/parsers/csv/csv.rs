@@ -19,7 +19,7 @@ impl Parser for CsvParser {
         let mut content = String::new();
         r.read_to_string(&mut content).map_err(|_| CsvError::Read)?;
 
-        let mut transactions: Vec<Transaction> = vec![];
+        let mut transactions: Vec<Transaction> = Vec::new();
 
         for (index, line) in content.lines().enumerate() {
             if index == 0 {
@@ -101,13 +101,19 @@ fn get_header_row() -> String {
 }
 
 #[cfg(test)]
-mod tests {
+mod tests_from_read {
     use std::io::Cursor;
 
     use super::*;
 
+    fn get_cursor(data: &str) -> Cursor<String> {
+        let header = get_header_row();
+        let cursor = Cursor::new(format!("{header}\n{data}"));
+        cursor
+    }
+
     #[test]
-    fn test_success_parse() {
+    fn test_success_from_read() {
         let mut cursor = get_cursor("0,DEPOSIT,0,1,100,1633036860000,SUCCESS,\"Test 1\"");
         let result = CsvParser::from_read(&mut cursor).unwrap();
         assert_eq!(result, [
@@ -140,12 +146,6 @@ mod tests {
         assert_eq!(result.to_string(), "Некорректный заголовок");
     }
 
-    fn get_cursor(data: &str) -> Cursor<String> {
-        let header = get_header_row();
-        let cursor = Cursor::new(format!("{header}\n{data}"));
-        cursor
-    }
-
     #[test]
     fn test_error_length() {
         let mut cursor = get_cursor("0");
@@ -154,7 +154,7 @@ mod tests {
     }
 
     #[test]
-    fn test_error_parse_field() {
+    fn test_error_invalid_field() {
         let mut cursor = get_cursor("!,DEPOSIT,0,1,100,1633036860000,FAILURE,\"Test\"");
         let result = CsvParser::from_read(&mut cursor).unwrap_err();
         assert_eq!(result.to_string(), "Ошибка парсинга поля TX_ID в строке 1");
@@ -186,5 +186,53 @@ mod tests {
         let mut cursor = get_cursor("0,DEPOSIT,0,1,100,1633036860000,FAILURE,\'Test\'");
         let result = CsvParser::from_read(&mut cursor).unwrap_err();
         assert_eq!(result.to_string(), "Ошибка парсинга поля DESCRIPTION в строке 1");
+    }
+}
+
+#[cfg(test)]
+mod tests_write_to {
+    use std::io::Cursor;
+
+    use super::*;
+
+    #[test]
+    fn test_success_write_to() {
+        let transactions: Vec<Transaction> = vec![
+            Transaction {
+                tx_id: 1,
+                tx_type: TxType::Deposit,
+                from_user_id: 0,
+                to_user_id: 1,
+                amount: 1000,
+                timestamp: 1633036860000,
+                status: Status::Success,
+                description: "record 1".to_string(),
+            },
+            Transaction {
+                tx_id: 2,
+                tx_type: TxType::Transfer,
+                from_user_id: 1,
+                to_user_id: 2,
+                amount: 1111,
+                timestamp: 1633036860000,
+                status: Status::Failure,
+                description: "record 2".to_string(),
+            }
+        ];
+        let mut cursor = Cursor::new(Vec::new());
+        CsvParser::write_to(&mut cursor, &transactions).unwrap();
+        let mut result = String::new();
+        cursor.set_position(0);
+        let _ = cursor.read_to_string(&mut result);
+        assert_eq!(
+            result,
+            [
+                "TX_ID,TX_TYPE,FROM_USER_ID,TO_USER_ID,AMOUNT,TIMESTAMP,STATUS,DESCRIPTION",
+                "1,DEPOSIT,0,1,1000,1633036860000,SUCCESS,\"record 1\"",
+                "2,TRANSFER,1,2,1111,1633036860000,FAILURE,\"record 2\"",
+            ]
+                .map(|l| format!("{l}\n"))
+                .join("")
+        );
     }
 }
