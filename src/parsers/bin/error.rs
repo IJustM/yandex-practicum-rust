@@ -6,6 +6,9 @@ use crate::Field;
 pub enum BinError {
     Unknown,
     Read,
+    InvalidLength {
+        index: usize,
+    },
     InvalidMagic {
         index: usize,
     },
@@ -26,6 +29,7 @@ impl fmt::Display for BinError {
         match self {
             Self::Unknown => write!(f, "Неизвестная ошибка"),
             Self::Read => write!(f, "Ошибка чтения"),
+            Self::InvalidLength { index } => write!(f, "Неожиданное завершение записи {index}"),
             Self::InvalidMagic { index } => write!(f, "Некорректный MAGIC в записи {index}"),
             Self::InvalidRecordSize { index } =>
                 write!(f, "Некорректный RECORD_SIZE в записи {index}"),
