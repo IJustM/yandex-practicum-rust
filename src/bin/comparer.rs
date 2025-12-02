@@ -1,5 +1,5 @@
 use clap::Parser;
-use yandex_practicum_rust::{ from_read, write_to };
+use yandex_practicum_rust::{ from_read };
 
 /// Программа для конвертации
 #[derive(Parser, Debug)]
@@ -7,21 +7,26 @@ use yandex_practicum_rust::{ from_read, write_to };
 struct Args {
     /// Файл, который будет конвертирован
     #[arg(long)]
-    from: String,
+    file1: String,
 
     /// Файл, который будет создан
     #[arg(long)]
-    to: String,
+    file2: String,
 }
 
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
-    let Args { from, to } = args;
+    let Args { file1, file2 } = args;
 
-    let transactions = from_read(&from)?;
-    write_to(transactions, &to)?;
+    let transactions1 = from_read(&file1)?;
+    let transactions2 = from_read(&file2)?;
 
-    println!("Конвертация успешно завершена!");
+    println!("{}", if transactions1 == transactions2 {
+        "Данные совпадают"
+    } else {
+        "Данные не совпадают"
+    });
+
     Ok(())
 }

@@ -1,9 +1,12 @@
 pub mod parsers;
 mod errors;
 
-use std::{ fmt, io::{ Read, Write }, str::FromStr };
+use std::{ fmt, fs, io::{ Read, Write }, str::FromStr };
 
-use crate::errors::{ ParserTypeError, WriteError };
+use crate::{
+    errors::{ ParserTypeError, WriteError },
+    parsers::{ bin::bin::BinParser, csv::csv::CsvParser, txt::txt::TxtParser },
+};
 
 pub enum ParserType {
     Csv,
@@ -177,4 +180,32 @@ pub trait Parser {
         writer: &mut W,
         transactions: &Vec<Transaction>
     ) -> Result<(), WriteError>;
+}
+
+pub fn from_read(from: &str) -> anyhow::Result<Vec<Transaction>> {
+    let from_ext = from.parse::<ParserType>()?;
+
+    let mut reader = fs::File::open(&from)?;
+
+    let transactions = match from_ext {
+        ParserType::Csv => CsvParser::from_read(&mut reader)?,
+        ParserType::Txt => TxtParser::from_read(&mut reader)?,
+        ParserType::Bin => BinParser::from_read(&mut reader)?,
+    };
+
+    Ok(transactions)
+}
+
+pub fn write_to(transactions: Vec<Transaction>, to: &str) -> anyhow::Result<()> {
+    let to_ext = to.parse::<ParserType>()?;
+
+    let mut writer = fs::File::create(&to)?;
+
+    match to_ext {
+        ParserType::Csv => CsvParser::write_to(&mut writer, &transactions)?,
+        ParserType::Txt => TxtParser::write_to(&mut writer, &transactions)?,
+        ParserType::Bin => BinParser::write_to(&mut writer, &transactions)?,
+    }
+
+    Ok(())
 }
