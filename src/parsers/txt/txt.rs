@@ -10,10 +10,11 @@ use crate::{
     parsers::{ txt::error::TxtError, utils::description_trim },
 };
 
+/// Парсер для txt формата
 pub struct TxtParser;
 
 impl Parser for TxtParser {
-    type Error = TxtError;
+    type ReadError = TxtError;
 
     fn from_read<R: Read>(r: &mut R) -> Result<Vec<Transaction>, TxtError> {
         let mut content = String::new();

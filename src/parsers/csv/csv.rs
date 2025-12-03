@@ -10,10 +10,11 @@ use crate::{
     parsers::{ csv::error::CsvError, utils::description_trim },
 };
 
+/// Парсер для csv формата
 pub struct CsvParser;
 
 impl Parser for CsvParser {
-    type Error = CsvError;
+    type ReadError = CsvError;
 
     fn from_read<R: Read>(r: &mut R) -> Result<Vec<Transaction>, CsvError> {
         let mut content = String::new();

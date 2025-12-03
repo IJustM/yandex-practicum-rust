@@ -2,26 +2,42 @@ use std::{ fmt };
 
 use crate::Field;
 
+/// Возможные ошибки при парсинге txt формата
 #[derive(Debug)]
 pub enum TxtError {
+    /// Неизвестная ошибка
     Unknown,
+    /// Ошибка чтения
     Read,
+    /// Некорректный формат в строке
     LineFormat {
+        /// Индекс строки
         index: usize,
     },
+    /// Неизвестное поле
     UnknownField {
+        /// Индекс строки
         index: usize,
     },
+    /// Повторное чтение поля
     FieldAlreadyExists {
+        /// Индекс строки
         index: usize,
+        /// Поле
         field: Field,
     },
+    /// Пропущено поле
     MissingField {
+        /// Индекс строки
         index: usize,
+        /// Поле
         field: Field,
     },
+    /// Некорректное поле
     InvalidField {
+        /// Индекс строки
         index: usize,
+        /// Поле
         field: Field,
     },
 }

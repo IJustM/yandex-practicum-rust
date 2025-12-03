@@ -1,4 +1,9 @@
+#![warn(missing_docs)]
+//! Парсер
+
+/// Парсеры
 pub mod parsers;
+
 mod errors;
 
 use std::{ fmt, fs, io::{ Read, Write }, str::FromStr };
@@ -8,9 +13,13 @@ use crate::{
     parsers::{ bin::bin::BinParser, csv::csv::CsvParser, txt::txt::TxtParser },
 };
 
+/// Виды парсеров
 pub enum ParserType {
+    /// csv
     Csv,
+    /// txt
     Txt,
+    /// bin
     Bin,
 }
 
@@ -37,15 +46,24 @@ impl fmt::Display for ParserType {
     }
 }
 
+/// Поля транзакции
 #[derive(Debug, Clone, PartialEq)]
 pub enum Field {
+    /// Уникальный идентификатор транзакции
     TxId,
+    /// Тип транзакции
     TxType,
+    /// Идентификатор пользователя-отправителя
     FromUserId,
+    /// Идентификатор пользователя-получателя
     ToUserId,
+    /// Сумма транзакции в наименьших единицах валюты
     Amount,
+    /// Время совершения транзакции в формате Unix-времени
     Timestamp,
+    /// Статус транзакции
     Status,
+    /// Текстовое описание транзакции
     Description,
 }
 
@@ -80,11 +98,15 @@ impl fmt::Display for Field {
     }
 }
 
+/// Тип транзакции
 #[derive(Debug, Default, PartialEq)]
 pub enum TxType {
+    /// Поступление
     #[default]
     Deposit,
+    /// Перевод
     Transfer,
+    /// Снятие
     Withdrawal,
 }
 
@@ -111,11 +133,15 @@ impl fmt::Display for TxType {
     }
 }
 
+/// Статус транзакции
 #[derive(Debug, Default, PartialEq)]
 pub enum Status {
+    /// Успешная
     #[default]
     Success,
+    /// Не успешная
     Failure,
+    /// В процессе
     Pending,
 }
 
@@ -142,15 +168,24 @@ impl fmt::Display for Status {
     }
 }
 
+/// Транзакция
 #[derive(Debug, Default, PartialEq)]
 pub struct Transaction {
+    /// Уникальный идентификатор транзакции
     tx_id: u64,
+    /// Тип транзакции
     tx_type: TxType,
+    /// Идентификатор пользователя-отправителя
     from_user_id: u64,
+    /// Идентификатор пользователя-получателя
     to_user_id: u64,
+    /// Сумма транзакции в наименьших единицах валюты
     amount: u64,
+    /// Время совершения транзакции в формате Unix-времени
     timestamp: i64,
+    /// Статус транзакции
     status: Status,
+    /// Текстовое описание транзакции
     description: String,
 }
 
@@ -169,19 +204,22 @@ impl Transaction {
     }
 }
 
+/// Парсер
 pub trait Parser {
-    type Error;
+    /// Ошибка чтения
+    type ReadError;
 
-    // чтение из файла
-    fn from_read<R: Read>(r: &mut R) -> Result<Vec<Transaction>, Self::Error>;
+    /// Чтение транзаций из файла
+    fn from_read<R: Read>(r: &mut R) -> Result<Vec<Transaction>, Self::ReadError>;
 
-    // запись в файл
+    /// Запись транзаций в файл
     fn write_to<W: Write>(
         writer: &mut W,
         transactions: &Vec<Transaction>
     ) -> Result<(), WriteError>;
 }
 
+/// Чтение транзаций из файла
 pub fn from_read(from: &str) -> anyhow::Result<Vec<Transaction>> {
     let from_ext = from.parse::<ParserType>()?;
 
@@ -196,6 +234,7 @@ pub fn from_read(from: &str) -> anyhow::Result<Vec<Transaction>> {
     Ok(transactions)
 }
 
+/// Запись транзаций в файл
 pub fn write_to(transactions: Vec<Transaction>, to: &str) -> anyhow::Result<()> {
     let to_ext = to.parse::<ParserType>()?;
 
