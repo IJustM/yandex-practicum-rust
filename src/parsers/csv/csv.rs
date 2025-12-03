@@ -14,7 +14,7 @@ use crate::{
 pub struct CsvParser;
 
 impl Parser for CsvParser {
-    type ReadError = CsvError;
+    type Error = CsvError;
 
     fn from_read<R: Read>(r: &mut R) -> Result<Vec<Transaction>, CsvError> {
         let mut content = String::new();

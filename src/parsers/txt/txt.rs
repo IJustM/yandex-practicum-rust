@@ -14,7 +14,7 @@ use crate::{
 pub struct TxtParser;
 
 impl Parser for TxtParser {
-    type ReadError = TxtError;
+    type Error = TxtError;
 
     fn from_read<R: Read>(r: &mut R) -> Result<Vec<Transaction>, TxtError> {
         let mut content = String::new();

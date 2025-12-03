@@ -207,10 +207,10 @@ impl Transaction {
 /// Парсер
 pub trait Parser {
     /// Ошибка чтения
-    type ReadError;
+    type Error;
 
     /// Чтение транзаций из файла
-    fn from_read<R: Read>(r: &mut R) -> Result<Vec<Transaction>, Self::ReadError>;
+    fn from_read<R: Read>(r: &mut R) -> Result<Vec<Transaction>, Self::Error>;
 
     /// Запись транзаций в файл
     fn write_to<W: Write>(
