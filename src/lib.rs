@@ -7,7 +7,9 @@ pub mod parsers;
 /// Ошибки
 pub mod errors;
 
-use std::{ fmt, fs, io::{ Read, Write }, str::FromStr };
+use std::{ fs, io::{ Read, Write } };
+
+use strum::{ Display, EnumString };
 
 use crate::{
     errors::{ ParserError, WriteError },
@@ -15,56 +17,53 @@ use crate::{
 };
 
 /// Виды парсеров
+#[derive(Debug, Display, EnumString)]
 pub enum ParserType {
     /// csv
+    #[strum(serialize = "csv")]
     Csv,
     /// txt
+    #[strum(serialize = "txt")]
     Txt,
     /// bin
+    #[strum(serialize = "bin")]
     Bin,
 }
 
-impl FromStr for ParserType {
-    type Err = ParserError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.split(".").last().ok_or(ParserError::UnknownExt)? {
-            "csv" => Ok(ParserType::Csv),
-            "txt" => Ok(ParserType::Txt),
-            "bin" => Ok(ParserType::Bin),
-            _ => Err(ParserError::UnknownExt),
-        }
-    }
-}
-
-impl fmt::Display for ParserType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match self {
-            Self::Csv => "csv",
-            Self::Txt => "txt",
-            Self::Bin => "bin",
-        };
-        write!(f, "{s}")
+impl ParserType {
+    fn get_ext(value: &str) -> Result<Self, ParserError> {
+        let ext = value.split(".").last().ok_or(ParserError::UnknownExt)?;
+        let parser_type = ext.parse::<ParserType>().map_err(|_| ParserError::UnknownExt)?;
+        Ok(parser_type)
     }
 }
 
 /// Поля транзакции
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Display)]
 pub enum Field {
     /// Уникальный идентификатор транзакции
+    #[strum(serialize = "TX_ID")]
     TxId,
     /// Тип транзакции
+    #[strum(serialize = "TX_TYPE")]
     TxType,
     /// Идентификатор пользователя-отправителя
+    #[strum(serialize = "FROM_USER_ID")]
     FromUserId,
     /// Идентификатор пользователя-получателя
+    #[strum(serialize = "TO_USER_ID")]
     ToUserId,
     /// Сумма транзакции в наименьших единицах валюты
+    #[strum(serialize = "AMOUNT")]
     Amount,
     /// Время совершения транзакции в формате Unix-времени
+    #[strum(serialize = "TIMESTAMP")]
     Timestamp,
     /// Статус транзакции
+    #[strum(serialize = "STATUS")]
     Status,
     /// Текстовое описание транзакции
+    #[strum(serialize = "DESCRIPTION")]
     Description,
 }
 
@@ -83,90 +82,34 @@ impl Field {
     }
 }
 
-impl fmt::Display for Field {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match self {
-            Self::TxId => "TX_ID",
-            Self::TxType => "TX_TYPE",
-            Self::FromUserId => "FROM_USER_ID",
-            Self::ToUserId => "TO_USER_ID",
-            Self::Amount => "AMOUNT",
-            Self::Timestamp => "TIMESTAMP",
-            Self::Status => "STATUS",
-            Self::Description => "DESCRIPTION",
-        };
-        write!(f, "{s}")
-    }
-}
-
 /// Тип транзакции
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Display, EnumString)]
 pub enum TxType {
     /// Поступление
     #[default]
+    #[strum(serialize = "DEPOSIT")]
     Deposit,
     /// Перевод
+    #[strum(serialize = "TRANSFER")]
     Transfer,
     /// Снятие
+    #[strum(serialize = "WITHDRAWAL")]
     Withdrawal,
 }
 
-impl FromStr for TxType {
-    type Err = ();
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "DEPOSIT" => Ok(TxType::Deposit),
-            "TRANSFER" => Ok(TxType::Transfer),
-            "WITHDRAWAL" => Ok(TxType::Withdrawal),
-            _ => Err(()),
-        }
-    }
-}
-
-impl fmt::Display for TxType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match self {
-            Self::Deposit => "DEPOSIT",
-            Self::Transfer => "TRANSFER",
-            Self::Withdrawal => "WITHDRAWAL",
-        };
-        write!(f, "{s}")
-    }
-}
-
 /// Статус транзакции
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Display, EnumString)]
 pub enum Status {
     /// Успешная
     #[default]
+    #[strum(serialize = "SUCCESS")]
     Success,
     /// Не успешная
+    #[strum(serialize = "FAILURE")]
     Failure,
     /// В процессе
+    #[strum(serialize = "PENDING")]
     Pending,
-}
-
-impl FromStr for Status {
-    type Err = ();
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "SUCCESS" => Ok(Status::Success),
-            "FAILURE" => Ok(Status::Failure),
-            "PENDING" => Ok(Status::Pending),
-            _ => Err(()),
-        }
-    }
-}
-
-impl fmt::Display for Status {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match self {
-            Self::Success => "SUCCESS",
-            Self::Failure => "FAILURE",
-            Self::Pending => "PENDING",
-        };
-        write!(f, "{s}")
-    }
 }
 
 /// Транзакция
@@ -222,7 +165,7 @@ pub trait Parser {
 
 /// Чтение транзаций из файла
 pub fn from_read(from: &str) -> Result<Vec<Transaction>, ParserError> {
-    let from_ext = from.parse::<ParserType>()?;
+    let from_ext = ParserType::get_ext(from)?;
 
     let mut reader = fs::File::open(&from).map_err(|_| ParserError::FileOpen)?;
 
@@ -237,7 +180,7 @@ pub fn from_read(from: &str) -> Result<Vec<Transaction>, ParserError> {
 
 /// Запись транзаций в файл
 pub fn write_to(transactions: Vec<Transaction>, to: &str) -> Result<(), ParserError> {
-    let to_ext = to.parse::<ParserType>()?;
+    let to_ext = ParserType::get_ext(to)?;
 
     let mut writer = fs::File::create(&to).map_err(|_| ParserError::FileCreate)?;
 
