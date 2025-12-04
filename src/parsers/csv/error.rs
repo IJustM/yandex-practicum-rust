@@ -1,20 +1,24 @@
-use std::{ fmt };
+use thiserror::Error;
 
 use crate::Field;
 
 /// Возможные ошибки при парсинге csv формата
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum CsvError {
     /// Ошибка чтения
+    #[error("Ошибка чтения")]
     Read,
     /// Ошибка в заголовке
+    #[error("Некорректный заголовок")]
     Header,
     /// Некорректное количество элементов в строке
+    #[error("Некорректное количество элементов в строке {index}")]
     Length {
         /// Индекс строки
         index: usize,
     },
     /// Некорректное поле
+    #[error("Ошибка парсинга поля {field} в строке {index}")]
     InvalidField {
         /// Индекс строки
         index: usize,
@@ -22,18 +26,3 @@ pub enum CsvError {
         field: Field,
     },
 }
-
-impl fmt::Display for CsvError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Read => write!(f, "Ошибка чтения"),
-            Self::Header => write!(f, "Некорректный заголовок"),
-            Self::Length { index } =>
-                write!(f, "Некорректное количество элементов в строке {index}"),
-            Self::InvalidField { index, field } =>
-                write!(f, "Ошибка парсинга поля {field} в строке {index}"),
-        }
-    }
-}
-
-impl std::error::Error for CsvError {}
