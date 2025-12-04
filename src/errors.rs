@@ -18,38 +18,14 @@ pub enum ParserError {
     UnknownExt,
     /// Ошибка csv парсера
     #[error("Ошибка csv парсера: {0}")]
-    Csv(CsvError),
+    Csv(#[from] CsvError),
     /// Ошибка txt парсера
     #[error("Ошибка txt парсера: {0}")]
-    Txt(TxtError),
+    Txt(#[from] TxtError),
     /// Ошибка bin парсера
     #[error("Ошибка bin парсера: {0}")]
-    Bin(BinError),
+    Bin(#[from] BinError),
     /// Ошибка записи
     #[error("Ошибка записи: {0}")]
-    Write(WriteError),
-}
-
-impl From<CsvError> for ParserError {
-    fn from(value: CsvError) -> Self {
-        ParserError::Csv(value)
-    }
-}
-
-impl From<TxtError> for ParserError {
-    fn from(value: TxtError) -> Self {
-        ParserError::Txt(value)
-    }
-}
-
-impl From<BinError> for ParserError {
-    fn from(value: BinError) -> Self {
-        ParserError::Bin(value)
-    }
-}
-
-impl From<WriteError> for ParserError {
-    fn from(value: WriteError) -> Self {
-        ParserError::Write(value)
-    }
+    Write(#[from] WriteError),
 }
