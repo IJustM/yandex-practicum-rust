@@ -16,9 +16,9 @@ pub struct TxtParser;
 impl Parser for TxtParser {
     type Error = TxtError;
 
-    fn from_read<R: Read>(r: &mut R) -> Result<Vec<Transaction>, TxtError> {
+    fn from_read<R: Read>(reader: &mut R) -> Result<Vec<Transaction>, TxtError> {
         let mut content = String::new();
-        r.read_to_string(&mut content).map_err(|_| TxtError::Read)?;
+        reader.read_to_string(&mut content).map_err(|_| TxtError::Read)?;
 
         let mut transactions: Vec<Transaction> = Vec::new();
         let mut transaction = Transaction::default();

@@ -16,9 +16,9 @@ pub struct CsvParser;
 impl Parser for CsvParser {
     type Error = CsvError;
 
-    fn from_read<R: Read>(r: &mut R) -> Result<Vec<Transaction>, CsvError> {
+    fn from_read<R: Read>(reader: &mut R) -> Result<Vec<Transaction>, CsvError> {
         let mut content = String::new();
-        r.read_to_string(&mut content).map_err(|_| CsvError::Read)?;
+        reader.read_to_string(&mut content).map_err(|_| CsvError::Read)?;
 
         let mut transactions: Vec<Transaction> = Vec::new();
 

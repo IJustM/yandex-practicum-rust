@@ -19,9 +19,9 @@ const RECORD_SIZE_WITHOUT_DESC: u32 = 8 + 1 + 8 + 8 + 8 + 8 + 1 + 4;
 impl Parser for BinParser {
     type Error = BinError;
 
-    fn from_read<R: Read>(r: &mut R) -> Result<Vec<Transaction>, BinError> {
+    fn from_read<R: Read>(reader: &mut R) -> Result<Vec<Transaction>, BinError> {
         let mut data: Vec<u8> = Vec::new();
-        r.read_to_end(&mut data).map_err(|_| BinError::Read)?;
+        reader.read_to_end(&mut data).map_err(|_| BinError::Read)?;
         let length = data.len();
 
         let mut transactions: Vec<Transaction> = Vec::new();

@@ -7,7 +7,7 @@ pub mod parsers;
 /// Ошибки
 pub mod errors;
 
-use std::{ fs, io::{ Read, Write } };
+use std::{ io::{ Read, Write } };
 
 use strum::{ Display, EnumString };
 
@@ -154,7 +154,7 @@ pub trait Parser {
     type Error;
 
     /// Чтение транзаций из файла
-    fn from_read<R: Read>(r: &mut R) -> Result<Vec<Transaction>, Self::Error>;
+    fn from_read<R: Read>(reader: &mut R) -> Result<Vec<Transaction>, Self::Error>;
 
     /// Запись транзаций в файл
     fn write_to<W: Write>(
@@ -164,30 +164,30 @@ pub trait Parser {
 }
 
 /// Чтение транзаций из файла
-pub fn from_read(from: &str) -> Result<Vec<Transaction>, ParserError> {
+pub fn from_read<R: Read>(reader: &mut R, from: &str) -> Result<Vec<Transaction>, ParserError> {
     let from_ext = ParserType::get_ext(from)?;
 
-    let mut reader = fs::File::open(&from).map_err(|_| ParserError::FileOpen)?;
-
     let transactions = match from_ext {
-        ParserType::Csv => CsvParser::from_read(&mut reader)?,
-        ParserType::Txt => TxtParser::from_read(&mut reader)?,
-        ParserType::Bin => BinParser::from_read(&mut reader)?,
+        ParserType::Csv => CsvParser::from_read(reader)?,
+        ParserType::Txt => TxtParser::from_read(reader)?,
+        ParserType::Bin => BinParser::from_read(reader)?,
     };
 
     Ok(transactions)
 }
 
 /// Запись транзаций в файл
-pub fn write_to(transactions: Vec<Transaction>, to: &str) -> Result<(), ParserError> {
+pub fn write_to<W: Write>(
+    writer: &mut W,
+    transactions: Vec<Transaction>,
+    to: &str
+) -> Result<(), ParserError> {
     let to_ext = ParserType::get_ext(to)?;
 
-    let mut writer = fs::File::create(&to).map_err(|_| ParserError::FileCreate)?;
-
     match to_ext {
-        ParserType::Csv => CsvParser::write_to(&mut writer, &transactions)?,
-        ParserType::Txt => TxtParser::write_to(&mut writer, &transactions)?,
-        ParserType::Bin => BinParser::write_to(&mut writer, &transactions)?,
+        ParserType::Csv => CsvParser::write_to(writer, &transactions)?,
+        ParserType::Txt => TxtParser::write_to(writer, &transactions)?,
+        ParserType::Bin => BinParser::write_to(writer, &transactions)?,
     }
 
     Ok(())
