@@ -4,12 +4,13 @@
 /// Парсеры
 pub mod parsers;
 
-mod errors;
+/// Ошибки
+pub mod errors;
 
 use std::{ fmt, fs, io::{ Read, Write }, str::FromStr };
 
 use crate::{
-    errors::{ ParserTypeError, WriteError },
+    errors::{ ParserError, WriteError },
     parsers::{ bin::bin::BinParser, csv::csv::CsvParser, txt::txt::TxtParser },
 };
 
@@ -24,13 +25,13 @@ pub enum ParserType {
 }
 
 impl FromStr for ParserType {
-    type Err = ParserTypeError;
+    type Err = ParserError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.split(".").last().ok_or(ParserTypeError::UnknownExt)? {
+        match s.split(".").last().ok_or(ParserError::UnknownExt)? {
             "csv" => Ok(ParserType::Csv),
             "txt" => Ok(ParserType::Txt),
             "bin" => Ok(ParserType::Bin),
-            _ => Err(ParserTypeError::UnknownExt),
+            _ => Err(ParserError::UnknownExt),
         }
     }
 }
@@ -220,10 +221,10 @@ pub trait Parser {
 }
 
 /// Чтение транзаций из файла
-pub fn from_read(from: &str) -> anyhow::Result<Vec<Transaction>> {
+pub fn from_read(from: &str) -> Result<Vec<Transaction>, ParserError> {
     let from_ext = from.parse::<ParserType>()?;
 
-    let mut reader = fs::File::open(&from)?;
+    let mut reader = fs::File::open(&from).map_err(|_| ParserError::FileOpen)?;
 
     let transactions = match from_ext {
         ParserType::Csv => CsvParser::from_read(&mut reader)?,
@@ -235,10 +236,10 @@ pub fn from_read(from: &str) -> anyhow::Result<Vec<Transaction>> {
 }
 
 /// Запись транзаций в файл
-pub fn write_to(transactions: Vec<Transaction>, to: &str) -> anyhow::Result<()> {
+pub fn write_to(transactions: Vec<Transaction>, to: &str) -> Result<(), ParserError> {
     let to_ext = to.parse::<ParserType>()?;
 
-    let mut writer = fs::File::create(&to)?;
+    let mut writer = fs::File::create(&to).map_err(|_| ParserError::FileCreate)?;
 
     match to_ext {
         ParserType::Csv => CsvParser::write_to(&mut writer, &transactions)?,
