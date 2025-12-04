@@ -10,6 +10,7 @@ use crate::{
     parsers::{ bin::error::BinError, utils::description_trim },
 };
 
+/// Парсер для bin формата
 pub struct BinParser;
 
 const MAGIC: &[u8; 4] = b"YPBN";

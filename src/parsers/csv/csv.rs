@@ -10,6 +10,7 @@ use crate::{
     parsers::{ csv::error::CsvError, utils::description_trim },
 };
 
+/// Парсер для csv формата
 pub struct CsvParser;
 
 impl Parser for CsvParser {

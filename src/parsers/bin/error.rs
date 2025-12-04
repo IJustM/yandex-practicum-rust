@@ -2,24 +2,38 @@ use std::fmt;
 
 use crate::Field;
 
+/// Возможные ошибки при парсинге bin формата
 #[derive(Debug)]
 pub enum BinError {
+    /// Неизвестная ошибка
     Unknown,
+    /// Ошибка чтения
     Read,
+    /// Неожиданное завершение записи
     InvalidLength {
+        /// Индекс строки
         index: usize,
     },
+    /// Некорректный MAGIC
     InvalidMagic {
+        /// Индекс строки
         index: usize,
     },
+    /// Некорректный RECORD_SIZE
     InvalidRecordSize {
+        /// Индекс строки
         index: usize,
     },
+    /// Некорректное поле
     InvalidField {
+        /// Индекс строки
         index: usize,
+        /// Поле
         field: Field,
     },
+    /// Некорректный DESC_LEN
     InvalidDescLen {
+        /// Индекс строки
         index: usize,
     },
 }

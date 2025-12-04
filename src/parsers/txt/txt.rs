@@ -10,6 +10,7 @@ use crate::{
     parsers::{ txt::error::TxtError, utils::description_trim },
 };
 
+/// Парсер для txt формата
 pub struct TxtParser;
 
 impl Parser for TxtParser {

@@ -2,15 +2,23 @@ use std::{ fmt };
 
 use crate::Field;
 
+/// Возможные ошибки при парсинге csv формата
 #[derive(Debug)]
 pub enum CsvError {
+    /// Ошибка чтения
     Read,
+    /// Ошибка в заголовке
     Header,
+    /// Некорректное количество элементов в строке
     Length {
+        /// Индекс строки
         index: usize,
     },
+    /// Некорректное поле
     InvalidField {
+        /// Индекс строки
         index: usize,
+        /// Поле
         field: Field,
     },
 }
