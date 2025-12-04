@@ -1,5 +1,7 @@
+use std::fs;
+
 use clap::Parser;
-use yandex_practicum_rust::{ from_read };
+use yandex_practicum_rust::from_read;
 
 /// Программа для конвертации
 #[derive(Parser, Debug)]
@@ -19,14 +21,20 @@ fn main() -> anyhow::Result<()> {
 
     let Args { file1, file2 } = args;
 
-    let transactions1 = from_read(&file1)?;
-    let transactions2 = from_read(&file2)?;
+    let mut reader1 = fs::File::open(&file1).expect("Ошибка чтения файла file1");
+    let mut reader2 = fs::File::open(&file2).expect("Ошибка чтения файла file2");
 
-    println!("{}", if transactions1 == transactions2 {
-        "Данные совпадают"
-    } else {
-        "Данные не совпадают"
-    });
+    let transactions1 = from_read(&mut reader1, &file1)?;
+    let transactions2 = from_read(&mut reader2, &file2)?;
+
+    println!(
+        "{}",
+        if transactions1 == transactions2 {
+            "Данные совпадают"
+        } else {
+            "Данные не совпадают"
+        }
+    );
 
     Ok(())
 }

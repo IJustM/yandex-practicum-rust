@@ -1,31 +1,31 @@
-use std::fmt;
+use thiserror::Error;
 
-#[derive(Debug)]
+use crate::parsers::{bin::error::BinError, csv::error::CsvError, txt::error::TxtError};
+
+/// Ошибка записи
+#[derive(Debug, Error)]
 pub enum WriteError {
+    /// Ошибка записи
+    #[error("Ошибка записи")]
     Write,
 }
 
-impl fmt::Display for WriteError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Write => write!(f, "Ошибка записи"),
-        }
-    }
-}
-
-impl std::error::Error for WriteError {}
-
-#[derive(Debug)]
-pub enum ParserTypeError {
+/// Ошибка работы парсера
+#[derive(Debug, Error)]
+pub enum ParserError {
+    /// Неизвестное расширение файла
+    #[error("Неизвестное расширение файла")]
     UnknownExt,
+    /// Ошибка csv парсера
+    #[error("Ошибка csv парсера: {0}")]
+    Csv(#[from] CsvError),
+    /// Ошибка txt парсера
+    #[error("Ошибка txt парсера: {0}")]
+    Txt(#[from] TxtError),
+    /// Ошибка bin парсера
+    #[error("Ошибка bin парсера: {0}")]
+    Bin(#[from] BinError),
+    /// Ошибка записи
+    #[error("Ошибка записи: {0}")]
+    Write(#[from] WriteError),
 }
-
-impl fmt::Display for ParserTypeError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::UnknownExt => write!(f, "Неизвестное расширение файла"),
-        }
-    }
-}
-
-impl std::error::Error for ParserTypeError {}

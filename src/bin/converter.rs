@@ -1,5 +1,7 @@
+use std::fs;
+
 use clap::Parser;
-use yandex_practicum_rust::{ from_read, write_to };
+use yandex_practicum_rust::{from_read, write_to};
 
 /// Программа для конвертации
 #[derive(Parser, Debug)]
@@ -19,8 +21,13 @@ fn main() -> anyhow::Result<()> {
 
     let Args { from, to } = args;
 
-    let transactions = from_read(&from)?;
-    write_to(transactions, &to)?;
+    let mut reader = fs::File::open(&from).expect("Ошибка чтения файла");
+
+    let transactions = from_read(&mut reader, &from)?;
+
+    let mut writer = fs::File::create(&to).expect("Ошибка создания файла");
+
+    write_to(&mut writer, &transactions, &to)?;
 
     println!("Конвертация успешно завершена!");
     Ok(())

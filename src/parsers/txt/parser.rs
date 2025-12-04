@@ -1,13 +1,9 @@
-use std::{ io::{ Read, Write } };
+use std::io::{Read, Write};
 
 use crate::{
-    Field,
-    Parser,
-    Status,
-    Transaction,
-    TxType,
+    Field, Parser, Status, Transaction, TxType,
     errors::WriteError,
-    parsers::{ txt::error::TxtError, utils::description_trim },
+    parsers::{txt::error::TxtError, utils::description_trim},
 };
 
 /// Парсер для txt формата
@@ -16,9 +12,11 @@ pub struct TxtParser;
 impl Parser for TxtParser {
     type Error = TxtError;
 
-    fn from_read<R: Read>(r: &mut R) -> Result<Vec<Transaction>, TxtError> {
+    fn from_read<R: Read>(reader: &mut R) -> Result<Vec<Transaction>, TxtError> {
         let mut content = String::new();
-        r.read_to_string(&mut content).map_err(|_| TxtError::Read)?;
+        reader
+            .read_to_string(&mut content)
+            .map_err(|_| TxtError::Read)?;
 
         let mut transactions: Vec<Transaction> = Vec::new();
         let mut transaction = Transaction::default();
@@ -36,7 +34,10 @@ impl Parser for TxtParser {
                     if line.is_empty() && parsed_fields.iter().all(|f| !f.1) {
                         continue;
                     }
-                    return Err(TxtError::MissingField { index, field: field.clone() });
+                    return Err(TxtError::MissingField {
+                        index,
+                        field: field.clone(),
+                    });
                 }
                 parsed_fields.iter_mut().for_each(|f| {
                     f.1 = false;
@@ -71,10 +72,14 @@ impl Parser for TxtParser {
             parsed_field.1 = true;
 
             let parse_col_u64 = |field: Field| {
-                value.parse::<u64>().map_err(|_| TxtError::InvalidField { index, field })
+                value
+                    .parse::<u64>()
+                    .map_err(|_| TxtError::InvalidField { index, field })
             };
             let parse_col_i64 = |field: Field| {
-                value.parse::<i64>().map_err(|_| TxtError::InvalidField { index, field })
+                value
+                    .parse::<i64>()
+                    .map_err(|_| TxtError::InvalidField { index, field })
             };
 
             match field {
@@ -104,9 +109,8 @@ impl Parser for TxtParser {
                         .map_err(|_| TxtError::InvalidField { index, field })?;
                 }
                 Field::Description => {
-                    transaction.description = description_trim(value).map_err(
-                        |_| TxtError::InvalidField { index, field }
-                    )?;
+                    transaction.description = description_trim(value)
+                        .map_err(|_| TxtError::InvalidField { index, field })?;
                 }
             }
         }
@@ -114,10 +118,7 @@ impl Parser for TxtParser {
         Ok(transactions)
     }
 
-    fn write_to<W: Write>(
-        writer: &mut W,
-        transactions: &Vec<Transaction>
-    ) -> Result<(), WriteError> {
+    fn write_to<W: Write>(writer: &mut W, transactions: &[Transaction]) -> Result<(), WriteError> {
         for t in transactions {
             let transtaction_record = Field::get_all()
                 .map(|field| {
@@ -145,27 +146,25 @@ mod tests_from_read {
 
     fn get_cursor(lines: Vec<&str>) -> Cursor<String> {
         let data = lines.join("\n");
-        let cursor = Cursor::new(data);
-        cursor
+        Cursor::new(data)
     }
 
     #[test]
     fn test_success_from_read() {
-        let mut cursor = get_cursor(
-            vec![
-                "TX_ID: 0",
-                "TX_TYPE: DEPOSIT",
-                "FROM_USER_ID: 0",
-                "TO_USER_ID: 1",
-                "AMOUNT: 100",
-                "TIMESTAMP: 1633036860000",
-                "STATUS: SUCCESS",
-                "DESCRIPTION: \"Test 1\""
-            ]
-        );
+        let mut cursor = get_cursor(vec![
+            "TX_ID: 0",
+            "TX_TYPE: DEPOSIT",
+            "FROM_USER_ID: 0",
+            "TO_USER_ID: 1",
+            "AMOUNT: 100",
+            "TIMESTAMP: 1633036860000",
+            "STATUS: SUCCESS",
+            "DESCRIPTION: \"Test 1\"",
+        ]);
         let result = TxtParser::from_read(&mut cursor).unwrap();
-        assert_eq!(result, [
-            Transaction {
+        assert_eq!(
+            result,
+            [Transaction {
                 tx_id: 0,
                 tx_type: TxType::Deposit,
                 from_user_id: 0,
@@ -174,8 +173,8 @@ mod tests_from_read {
                 timestamp: 1633036860000,
                 status: Status::Success,
                 description: "Test 1".to_string(),
-            },
-        ]);
+            },]
+        );
     }
 
     #[test]
@@ -201,143 +200,142 @@ mod tests_from_read {
 
     #[test]
     fn test_error_missing_field() {
-        let mut cursor = get_cursor(
-            vec![
-                "TX_TYPE: DEPOSIT",
-                "TO_USER_ID: 9223372036854775807",
-                "FROM_USER_ID: 0",
-                "TIMESTAMP: 1633036860000",
-                "DESCRIPTION: \"Test\"",
-                "TX_ID: 1000000000000000",
-                "AMOUNT: 100"
-                // "STATUS: FAILURE"
-            ]
-        );
+        let mut cursor = get_cursor(vec![
+            "TX_TYPE: DEPOSIT",
+            "TO_USER_ID: 9223372036854775807",
+            "FROM_USER_ID: 0",
+            "TIMESTAMP: 1633036860000",
+            "DESCRIPTION: \"Test\"",
+            "TX_ID: 1000000000000000",
+            "AMOUNT: 100", // "STATUS: FAILURE"
+        ]);
         let result = TxtParser::from_read(&mut cursor).unwrap_err();
-        assert_eq!(result.to_string(), "Отсутствует поле STATUS в записи на строке 7");
+        assert_eq!(
+            result.to_string(),
+            "Отсутствует поле STATUS в записи на строке 7"
+        );
     }
 
     #[test]
     fn test_error_invalid_field() {
-        let mut cursor = get_cursor(
-            vec![
-                "TX_ID: !",
-                "TX_TYPE: DEPOSIT",
-                "FROM_USER_ID: 0",
-                "TO_USER_ID: 1",
-                "AMOUNT: 100",
-                "TIMESTAMP: 1633036860000",
-                "STATUS: SUCCESS",
-                "DESCRIPTION: \"Test 1\""
-            ]
-        );
+        let mut cursor = get_cursor(vec![
+            "TX_ID: !",
+            "TX_TYPE: DEPOSIT",
+            "FROM_USER_ID: 0",
+            "TO_USER_ID: 1",
+            "AMOUNT: 100",
+            "TIMESTAMP: 1633036860000",
+            "STATUS: SUCCESS",
+            "DESCRIPTION: \"Test 1\"",
+        ]);
         let result = TxtParser::from_read(&mut cursor).unwrap_err();
         assert_eq!(result.to_string(), "Ошибка парсинга поля TX_ID в строке 0");
 
-        let mut cursor = get_cursor(
-            vec![
-                "TX_ID: 0",
-                "TX_TYPE: !",
-                "FROM_USER_ID: 0",
-                "TO_USER_ID: 1",
-                "AMOUNT: 100",
-                "TIMESTAMP: 1633036860000",
-                "STATUS: SUCCESS",
-                "DESCRIPTION: \"Test 1\""
-            ]
-        );
+        let mut cursor = get_cursor(vec![
+            "TX_ID: 0",
+            "TX_TYPE: !",
+            "FROM_USER_ID: 0",
+            "TO_USER_ID: 1",
+            "AMOUNT: 100",
+            "TIMESTAMP: 1633036860000",
+            "STATUS: SUCCESS",
+            "DESCRIPTION: \"Test 1\"",
+        ]);
         let result = TxtParser::from_read(&mut cursor).unwrap_err();
-        assert_eq!(result.to_string(), "Ошибка парсинга поля TX_TYPE в строке 1");
-
-        let mut cursor = get_cursor(
-            vec![
-                "TX_ID: 0",
-                "TX_TYPE: DEPOSIT",
-                "FROM_USER_ID: !",
-                "TO_USER_ID: 1",
-                "AMOUNT: 100",
-                "TIMESTAMP: 1633036860000",
-                "STATUS: SUCCESS",
-                "DESCRIPTION: \"Test 1\""
-            ]
+        assert_eq!(
+            result.to_string(),
+            "Ошибка парсинга поля TX_TYPE в строке 1"
         );
+
+        let mut cursor = get_cursor(vec![
+            "TX_ID: 0",
+            "TX_TYPE: DEPOSIT",
+            "FROM_USER_ID: !",
+            "TO_USER_ID: 1",
+            "AMOUNT: 100",
+            "TIMESTAMP: 1633036860000",
+            "STATUS: SUCCESS",
+            "DESCRIPTION: \"Test 1\"",
+        ]);
         let result = TxtParser::from_read(&mut cursor).unwrap_err();
-        assert_eq!(result.to_string(), "Ошибка парсинга поля FROM_USER_ID в строке 2");
-
-        let mut cursor = get_cursor(
-            vec![
-                "TX_ID: 0",
-                "TX_TYPE: DEPOSIT",
-                "FROM_USER_ID: 0",
-                "TO_USER_ID: !",
-                "AMOUNT: 100",
-                "TIMESTAMP: 1633036860000",
-                "STATUS: SUCCESS",
-                "DESCRIPTION: \"Test 1\""
-            ]
+        assert_eq!(
+            result.to_string(),
+            "Ошибка парсинга поля FROM_USER_ID в строке 2"
         );
+
+        let mut cursor = get_cursor(vec![
+            "TX_ID: 0",
+            "TX_TYPE: DEPOSIT",
+            "FROM_USER_ID: 0",
+            "TO_USER_ID: !",
+            "AMOUNT: 100",
+            "TIMESTAMP: 1633036860000",
+            "STATUS: SUCCESS",
+            "DESCRIPTION: \"Test 1\"",
+        ]);
         let result = TxtParser::from_read(&mut cursor).unwrap_err();
-        assert_eq!(result.to_string(), "Ошибка парсинга поля TO_USER_ID в строке 3");
-
-        let mut cursor = get_cursor(
-            vec![
-                "TX_ID: 0",
-                "TX_TYPE: DEPOSIT",
-                "FROM_USER_ID: 0",
-                "TO_USER_ID: 1",
-                "AMOUNT: !",
-                "TIMESTAMP: 1633036860000",
-                "STATUS: SUCCESS",
-                "DESCRIPTION: \"Test 1\""
-            ]
+        assert_eq!(
+            result.to_string(),
+            "Ошибка парсинга поля TO_USER_ID в строке 3"
         );
+
+        let mut cursor = get_cursor(vec![
+            "TX_ID: 0",
+            "TX_TYPE: DEPOSIT",
+            "FROM_USER_ID: 0",
+            "TO_USER_ID: 1",
+            "AMOUNT: !",
+            "TIMESTAMP: 1633036860000",
+            "STATUS: SUCCESS",
+            "DESCRIPTION: \"Test 1\"",
+        ]);
         let result = TxtParser::from_read(&mut cursor).unwrap_err();
         assert_eq!(result.to_string(), "Ошибка парсинга поля AMOUNT в строке 4");
 
-        let mut cursor = get_cursor(
-            vec![
-                "TX_ID: 0",
-                "TX_TYPE: DEPOSIT",
-                "FROM_USER_ID: 0",
-                "TO_USER_ID: 1",
-                "AMOUNT: 100",
-                "TIMESTAMP: !",
-                "STATUS: SUCCESS",
-                "DESCRIPTION: \"Test 1\""
-            ]
-        );
+        let mut cursor = get_cursor(vec![
+            "TX_ID: 0",
+            "TX_TYPE: DEPOSIT",
+            "FROM_USER_ID: 0",
+            "TO_USER_ID: 1",
+            "AMOUNT: 100",
+            "TIMESTAMP: !",
+            "STATUS: SUCCESS",
+            "DESCRIPTION: \"Test 1\"",
+        ]);
         let result = TxtParser::from_read(&mut cursor).unwrap_err();
-        assert_eq!(result.to_string(), "Ошибка парсинга поля TIMESTAMP в строке 5");
-
-        let mut cursor = get_cursor(
-            vec![
-                "TX_ID: 0",
-                "TX_TYPE: DEPOSIT",
-                "FROM_USER_ID: 0",
-                "TO_USER_ID: 1",
-                "AMOUNT: 100",
-                "TIMESTAMP: 1633036860000",
-                "STATUS: !",
-                "DESCRIPTION: \"Test 1\""
-            ]
+        assert_eq!(
+            result.to_string(),
+            "Ошибка парсинга поля TIMESTAMP в строке 5"
         );
+
+        let mut cursor = get_cursor(vec![
+            "TX_ID: 0",
+            "TX_TYPE: DEPOSIT",
+            "FROM_USER_ID: 0",
+            "TO_USER_ID: 1",
+            "AMOUNT: 100",
+            "TIMESTAMP: 1633036860000",
+            "STATUS: !",
+            "DESCRIPTION: \"Test 1\"",
+        ]);
         let result = TxtParser::from_read(&mut cursor).unwrap_err();
         assert_eq!(result.to_string(), "Ошибка парсинга поля STATUS в строке 6");
 
-        let mut cursor = get_cursor(
-            vec![
-                "TX_ID: 0",
-                "TX_TYPE: DEPOSIT",
-                "FROM_USER_ID: 0",
-                "TO_USER_ID: 1",
-                "AMOUNT: 100",
-                "TIMESTAMP: 1633036860000",
-                "STATUS: SUCCESS",
-                "DESCRIPTION: Test 1"
-            ]
-        );
+        let mut cursor = get_cursor(vec![
+            "TX_ID: 0",
+            "TX_TYPE: DEPOSIT",
+            "FROM_USER_ID: 0",
+            "TO_USER_ID: 1",
+            "AMOUNT: 100",
+            "TIMESTAMP: 1633036860000",
+            "STATUS: SUCCESS",
+            "DESCRIPTION: Test 1",
+        ]);
         let result = TxtParser::from_read(&mut cursor).unwrap_err();
-        assert_eq!(result.to_string(), "Ошибка парсинга поля DESCRIPTION в строке 7");
+        assert_eq!(
+            result.to_string(),
+            "Ошибка парсинга поля DESCRIPTION в строке 7"
+        );
     }
 }
 
@@ -369,7 +367,7 @@ mod tests_write_to {
                 timestamp: 1633036860000,
                 status: Status::Failure,
                 description: "record 2".to_string(),
-            }
+            },
         ];
         let mut cursor = Cursor::new(Vec::new());
         TxtParser::write_to(&mut cursor, &transactions).unwrap();
@@ -398,8 +396,8 @@ mod tests_write_to {
                 "DESCRIPTION: \"record 2\"",
                 "",
             ]
-                .map(|l| format!("{l}\n"))
-                .join("")
+            .map(|l| format!("{l}\n"))
+            .join("")
         );
     }
 }
