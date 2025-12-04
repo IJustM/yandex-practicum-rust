@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::parsers::{ bin::error::BinError, csv::error::CsvError, txt::error::TxtError };
+use crate::parsers::{bin::error::BinError, csv::error::CsvError, txt::error::TxtError};
 
 /// Ошибка записи
 #[derive(Debug, Error)]

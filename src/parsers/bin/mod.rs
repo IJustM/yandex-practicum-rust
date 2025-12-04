@@ -1,4 +1,4 @@
-/// Модуль парсера
-pub mod bin;
 /// Модуль ошибок
 pub mod error;
+/// Модуль парсера
+pub mod parser;

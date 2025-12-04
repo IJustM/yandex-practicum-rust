@@ -7,13 +7,13 @@ pub mod parsers;
 /// Ошибки
 pub mod errors;
 
-use std::{ io::{ Read, Write } };
+use std::io::{Read, Write};
 
-use strum::{ Display, EnumString };
+use strum::{Display, EnumString};
 
 use crate::{
-    errors::{ ParserError, WriteError },
-    parsers::{ bin::bin::BinParser, csv::csv::CsvParser, txt::txt::TxtParser },
+    errors::{ParserError, WriteError},
+    parsers::{bin::parser::BinParser, csv::parser::CsvParser, txt::parser::TxtParser},
 };
 
 /// Виды парсеров
@@ -33,7 +33,9 @@ pub enum ParserType {
 impl ParserType {
     fn get_ext(value: &str) -> Result<Self, ParserError> {
         let ext = value.split(".").last().ok_or(ParserError::UnknownExt)?;
-        let parser_type = ext.parse::<ParserType>().map_err(|_| ParserError::UnknownExt)?;
+        let parser_type = ext
+            .parse::<ParserType>()
+            .map_err(|_| ParserError::UnknownExt)?;
         Ok(parser_type)
     }
 }
@@ -157,10 +159,7 @@ pub trait Parser {
     fn from_read<R: Read>(reader: &mut R) -> Result<Vec<Transaction>, Self::Error>;
 
     /// Запись транзаций в файл
-    fn write_to<W: Write>(
-        writer: &mut W,
-        transactions: &Vec<Transaction>
-    ) -> Result<(), WriteError>;
+    fn write_to<W: Write>(writer: &mut W, transactions: &[Transaction]) -> Result<(), WriteError>;
 }
 
 /// Чтение транзаций из файла
@@ -179,15 +178,15 @@ pub fn from_read<R: Read>(reader: &mut R, from: &str) -> Result<Vec<Transaction>
 /// Запись транзаций в файл
 pub fn write_to<W: Write>(
     writer: &mut W,
-    transactions: Vec<Transaction>,
-    to: &str
+    transactions: &[Transaction],
+    to: &str,
 ) -> Result<(), ParserError> {
     let to_ext = ParserType::get_ext(to)?;
 
     match to_ext {
-        ParserType::Csv => CsvParser::write_to(writer, &transactions)?,
-        ParserType::Txt => TxtParser::write_to(writer, &transactions)?,
-        ParserType::Bin => BinParser::write_to(writer, &transactions)?,
+        ParserType::Csv => CsvParser::write_to(writer, transactions)?,
+        ParserType::Txt => TxtParser::write_to(writer, transactions)?,
+        ParserType::Bin => BinParser::write_to(writer, transactions)?,
     }
 
     Ok(())

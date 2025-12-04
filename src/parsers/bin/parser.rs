@@ -1,13 +1,9 @@
-use std::{ io::{ Read, Write } };
+use std::io::{Read, Write};
 
 use crate::{
-    Field,
-    Parser,
-    Status,
-    Transaction,
-    TxType,
+    Field, Parser, Status, Transaction, TxType,
     errors::WriteError,
-    parsers::{ bin::error::BinError, utils::description_trim },
+    parsers::{bin::error::BinError, utils::description_trim},
 };
 
 /// Парсер для bin формата
@@ -34,7 +30,9 @@ impl Parser for BinParser {
                 let start = offset;
                 let end = start + n;
                 if end > length {
-                    return Err(BinError::InvalidLength { index: record_index });
+                    return Err(BinError::InvalidLength {
+                        index: record_index,
+                    });
                 }
                 let value = &data[start..end];
                 offset += n;
@@ -42,25 +40,36 @@ impl Parser for BinParser {
             };
 
             let get_value_u32 = |value: &[u8]| -> Result<u32, BinError> {
-                Ok(u32::from_be_bytes(value.try_into().map_err(|_| BinError::Unknown)?))
+                Ok(u32::from_be_bytes(
+                    value.try_into().map_err(|_| BinError::Unknown)?,
+                ))
             };
             let get_value_u64 = |value: &[u8]| -> Result<u64, BinError> {
-                Ok(u64::from_be_bytes(value.try_into().map_err(|_| BinError::Unknown)?))
+                Ok(u64::from_be_bytes(
+                    value.try_into().map_err(|_| BinError::Unknown)?,
+                ))
             };
             let get_value_i32 = |value: &[u8]| -> Result<i32, BinError> {
-                Ok(i32::from_be_bytes(value.try_into().map_err(|_| BinError::Unknown)?))
+                Ok(i32::from_be_bytes(
+                    value.try_into().map_err(|_| BinError::Unknown)?,
+                ))
             };
             let get_value_i64 = |value: &[u8]| -> Result<i64, BinError> {
-                Ok(i64::from_be_bytes(value.try_into().map_err(|_| BinError::Unknown)?))
+                Ok(i64::from_be_bytes(
+                    value.try_into().map_err(|_| BinError::Unknown)?,
+                ))
             };
 
             let magic = take(4)?;
             if magic != MAGIC {
-                return Err(BinError::InvalidMagic { index: record_index });
+                return Err(BinError::InvalidMagic {
+                    index: record_index,
+                });
             }
-            let _record_size = get_value_u32(take(4)?).map_err(|_| BinError::InvalidRecordSize {
-                index: record_index,
-            })?;
+            let _record_size =
+                get_value_u32(take(4)?).map_err(|_| BinError::InvalidRecordSize {
+                    index: record_index,
+                })?;
 
             let tx_id = get_value_u64(take(8)?).map_err(|_| BinError::InvalidField {
                 index: record_index,
@@ -70,7 +79,10 @@ impl Parser for BinParser {
                 0 => TxType::Deposit,
                 1 => TxType::Transfer,
                 2 => TxType::Withdrawal,
-                _ => Err(BinError::InvalidField { index: record_index, field: Field::TxType })?,
+                _ => Err(BinError::InvalidField {
+                    index: record_index,
+                    field: Field::TxType,
+                })?,
             };
             let from_user_id = get_value_u64(take(8)?).map_err(|_| BinError::InvalidField {
                 index: record_index,
@@ -92,22 +104,25 @@ impl Parser for BinParser {
                 0 => Status::Success,
                 1 => Status::Failure,
                 2 => Status::Pending,
-                _ => Err(BinError::InvalidField { index: record_index, field: Field::Status })?,
+                _ => Err(BinError::InvalidField {
+                    index: record_index,
+                    field: Field::Status,
+                })?,
             };
             let desc_len = get_value_i32(take(4)?).map_err(|_| BinError::InvalidDescLen {
                 index: record_index,
             })?;
-            let description = str
-                ::from_utf8(take(desc_len as usize)?)
+            let description = str::from_utf8(take(desc_len as usize)?)
                 .map_err(|_| BinError::InvalidField {
                     index: record_index,
                     field: Field::Description,
                 })?
                 .to_string();
-            let description = description_trim(&description).map_err(|_| BinError::InvalidField {
-                index: record_index,
-                field: Field::Description,
-            })?;
+            let description =
+                description_trim(&description).map_err(|_| BinError::InvalidField {
+                    index: record_index,
+                    field: Field::Description,
+                })?;
 
             record_index += 1;
             transactions.push(Transaction {
@@ -125,10 +140,7 @@ impl Parser for BinParser {
         Ok(transactions)
     }
 
-    fn write_to<W: Write>(
-        writer: &mut W,
-        transactions: &Vec<Transaction>
-    ) -> Result<(), WriteError> {
+    fn write_to<W: Write>(writer: &mut W, transactions: &[Transaction]) -> Result<(), WriteError> {
         for t in transactions {
             let mut data: Vec<u8> = Vec::new();
             data.extend_from_slice(MAGIC);
@@ -138,31 +150,23 @@ impl Parser for BinParser {
             let desc_len = description.len() as u32;
 
             data.extend_from_slice(
-                &((RECORD_SIZE_WITHOUT_DESC + desc_len).to_be_bytes() as [u8; 4])
+                &((RECORD_SIZE_WITHOUT_DESC + desc_len).to_be_bytes() as [u8; 4]),
             );
             data.extend_from_slice(&(t.tx_id.to_be_bytes() as [u8; 8]));
-            data.extend_from_slice(
-                &[
-                    match t.tx_type {
-                        TxType::Deposit => 0,
-                        TxType::Transfer => 1,
-                        TxType::Withdrawal => 2,
-                    },
-                ]
-            );
+            data.extend_from_slice(&[match t.tx_type {
+                TxType::Deposit => 0,
+                TxType::Transfer => 1,
+                TxType::Withdrawal => 2,
+            }]);
             data.extend_from_slice(&(t.from_user_id.to_be_bytes() as [u8; 8]));
             data.extend_from_slice(&(t.to_user_id.to_be_bytes() as [u8; 8]));
             data.extend_from_slice(&(t.amount.to_be_bytes() as [u8; 8]));
             data.extend_from_slice(&(t.timestamp.to_be_bytes() as [u8; 8]));
-            data.extend_from_slice(
-                &[
-                    match t.status {
-                        Status::Success => 0,
-                        Status::Failure => 1,
-                        Status::Pending => 2,
-                    },
-                ]
-            );
+            data.extend_from_slice(&[match t.status {
+                Status::Success => 0,
+                Status::Failure => 1,
+                Status::Pending => 2,
+            }]);
             data.extend_from_slice(&(desc_len.to_be_bytes() as [u8; 4]));
             data.extend_from_slice(description);
 
@@ -198,8 +202,9 @@ mod tests_from_read {
         let mut cursor = Cursor::new(data);
 
         let result = BinParser::from_read(&mut cursor).unwrap();
-        assert_eq!(result, [
-            Transaction {
+        assert_eq!(
+            result,
+            [Transaction {
                 tx_id: 1,
                 tx_type: TxType::Deposit,
                 from_user_id: 0,
@@ -208,8 +213,8 @@ mod tests_from_read {
                 timestamp: 1633036860000,
                 status: Status::Success,
                 description: "record 1".to_string(),
-            },
-        ]);
+            },]
+        );
     }
 
     #[test]
@@ -263,7 +268,7 @@ mod tests_write_to {
                 timestamp: 1633036860000,
                 status: Status::Failure,
                 description: "record 2".to_string(),
-            }
+            },
         ];
         let mut cursor = Cursor::new(Vec::new());
         BinParser::write_to(&mut cursor, &transactions).unwrap();

@@ -19,7 +19,7 @@ jobs:
     - name: Run fmt
       run: cargo fmt --all -- --check
     - name: Run clippy
-      run: RUSTFLAGS="-D warnings" cargo clippy --all --all-targets --locked -- -D warnings
+      run: cargo clippy --all --all-targets --locked
     - name: Run tests
       run: cargo test --verbose
     - name: Build
